@@ -233,9 +233,10 @@ test('errorPropagationMode:false (default)', function (t) {
     return next()
   })
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -276,9 +277,10 @@ test('errorPropagationMode:true', function (t) {
 
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -311,9 +313,10 @@ test('in default mode, production:false leads to high detail client response mes
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         res.once('data', function (msg) {
@@ -350,9 +353,10 @@ test('in default mode, production:true leads to standard 503 client response mes
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         res.once('data', function (msg) {
@@ -398,9 +402,10 @@ test('in errorPropagationMode production:false sets expose:true on error object'
 
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -441,9 +446,10 @@ test('in errorPropagationMode production:true sets expose:false on error object'
   })
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -481,9 +487,10 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
 
   app.use(router.routes())
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         process.memoryUsage = function () {
@@ -495,7 +502,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
           }
         }
         setTimeout(function () {
-          http.get('http://localhost:3000').on('response', function (res) {
+          http.get('http://localhost:' + port).on('response', function (res) {
             t.is(res.statusCode, 200)
             server.close()
             protect.stop()
@@ -540,9 +547,10 @@ test('if logging option is a string, when overloaded, writes log message using r
   })
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
@@ -573,9 +581,10 @@ test('if logging option is a function, when overloaded calls the function with h
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
@@ -609,9 +618,10 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
   })
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })

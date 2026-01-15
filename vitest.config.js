@@ -7,6 +7,6 @@ export default defineConfig({
     include: ['test/index.js', 'test/integration/**/index.js'],
     threads: false,
     maxThreads: 1,
-    testTimeout: 120000
+    testTimeout: 3000
   }
 })

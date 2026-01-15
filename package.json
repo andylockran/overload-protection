@@ -4,7 +4,7 @@
   "version": "1.2.3",
   "main": "index.js",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
     "cov": "vitest --coverage",
@@ -30,8 +30,7 @@
     "express",
     "fastify",
     "http",
-    "koa",
-    "restify"
+    "koa"
   ],
   "author": "David Mark Clements <huperekchuno@googlemail.com>",
   "license": "MIT",
@@ -41,7 +40,6 @@
     "koa": "^2.11.0",
     "koa-router": "^7.4.0",
     "pre-commit": "^1.2.2",
-    "restify": "^11.0.0",
     "standard": "^10.0.3",
     "vitest": "^1.0.0"
   },
@@ -60,5 +58,5 @@
     "url": "https://github.com/davidmarkclements/overload-protection/issues"
   },
   "homepage": "https://github.com/davidmarkclements/overload-protection#readme",
-  "description": "Load detection and shedding capabilities for http, express, restify and koa"
+  "description": "Load detection and shedding capabilities for http, express and koa"
 }

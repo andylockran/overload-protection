@@ -524,9 +524,10 @@ test('(callback api) resumes usual operation once load pressure is reduced under
     })
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         process.memoryUsage = function () {
@@ -538,7 +539,7 @@ test('(callback api) resumes usual operation once load pressure is reduced under
           }
         }
         setTimeout(function () {
-          http.get('http://localhost:3000').on('response', function (res) {
+          http.get('http://localhost:' + port).on('response', function (res) {
             t.is(res.statusCode, 200)
             server.close()
             protect.stop()

@@ -1,53 +1,107 @@
-# Copilot instructions — overload-protection
+# Copilot Instructions for overload-protection
 
-Purpose: Help an AI coding agent make productive, safe changes in this repository.
+## Project Overview
+A Node.js middleware library providing load-shedding capabilities for HTTP servers. Monitors event loop delay, heap usage, and RSS memory to send 503 responses when thresholds are crossed, preventing cascading failures under heavy load.
 
-- Big picture
-  - This is a small Node.js library that provides load-shedding / overload-protection middleware for `http`, `express`, `koa`, and `restify`.
-  - Entrypoint: `index.js` exports `protect(framework, opts)` which selects a framework integration from `lib/` and returns an "integration" function that is also a profiler object (has properties like `overload`, `eventLoopDelay`, and `stop()`).
-  - Core logic lives in `index.js` (thresholds, loopbench), and the per-framework request handling lives in `lib/http.js` and `lib/koa.js`. `express` and `restify` re-export the HTTP implementation.
+**Critical: This is a precision library** - it deals with low-level performance metrics and timing. Code changes require exactness in:
+- Threshold checking logic (off-by-one errors have production impact)
+- Memory measurement sampling (timing and interval precision matters)
+- Framework adapter behavior (must match framework contracts exactly)
+- Test timing and cleanup (prevent flaky tests and resource leaks)
 
-- Key files to inspect for changes
-  - `index.js` — orchestration, default options, framework map
-  - `lib/http.js` — shared middleware behavior, logging, Retry-After and error-propagation semantics
-  - `lib/koa.js` — Koa-specific flow (async/throw vs callback)
-  - `lib/explain.js`, `lib/stats.js` — human-readable explanation + stats formatting
-  - `test/` — integration and unit tests (uses `tap`)
-  - `benchmarks/` and `demos/` — runnable examples to validate behaviour and performance
+## Architecture
 
-- API & patterns to follow (concrete)
-  - Usage pattern: require the library, initialise per-framework, then use as middleware or call in request handlers.
-    - Example (http):
-      const protect = require('./index')('http', { maxEventLoopDelay: 42, clientRetrySecs: 1 })
-      // in server request handler:
-      if (protect(req, res)) return // request handled (503) by protector
-  - The returned `protect` function has profiler properties mixed onto the integration function via prototype (see `index.js`). Tests and logging read these properties directly (`protect.overload`, `protect.stop()`).
-  - At least one of `maxEventLoopDelay`, `maxHeapUsedBytes`, or `maxRssBytes` must be > 0 — otherwise `protect()` throws. Preserve that guard when refactoring.
+### Core Components
+- **[index.js](../index.js)**: Main entry point - factory function that accepts framework name (`'http'`, `'express'`, `'koa'`) and options, returns framework-specific middleware/protection function
+- **[lib/](../lib/)**: Framework adapters follow consistent pattern:
+  - Each adapter ([http.js](../lib/http.js), [express.js](../lib/express.js), [koa.js](../lib/koa.js)) wraps profiler state with framework-specific request handling
+  - All share identical options handling and threshold checking logic
+  - Differ only in response/error propagation (callbacks vs promises vs middleware chaining)
+- **[lib/explain.js](../lib/explain.js)**: Generates human-readable error messages indicating which threshold(s) triggered overload
+- **[lib/stats.js](../lib/stats.js)**: Simple constructor for stats objects passed to loggers
 
-- Options you will see and should respect
-  - `maxEventLoopDelay`, `sampleInterval`, `maxHeapUsedBytes`, `maxRssBytes`
-  - `clientRetrySecs` (causes `Retry-After` header when >0)
-  - `logStatsOnReq`, `logging` (string => `req.log[name]` style; function => call with stats)
-  - `errorPropagationMode` (when enabled the middleware will pass/throw an error instead of ending the response)
+### Profiler Pattern
+The `profiler` object (created in [index.js](../index.js#L73-L82)) is the state container:
+- Properties: `overload`, `eventLoopOverload`, `heapUsedOverload`, `rssOverload`, plus threshold values
+- Updated by `loopbench` library (event loop monitoring) and periodic `checkMemory()` calls
+- The returned function/middleware has `profiler` in its prototype chain, exposing state as instance properties
 
-- Testing & developer workflows
-  - Scripts in `package.json`:
-    - `npm test` runs `tap test`
-    - `npm run cov` runs `tap --cov test`
-    - `npm run lint` runs `standard`
-    - `npm run benchmarks` runs each file under `benchmarks/`
-  - Pre-commit hooks (via `pre-commit`) run `test` and `lint`.
-  - When changing request behavior, update `test/integration/*` and add a demo in `demos/` if helpful.
+### Two Operating Modes
+1. **Default mode** (`errorPropagationMode: false`): Middleware immediately ends response with 503, preventing further processing
+2. **Error propagation mode** (`errorPropagationMode: true`): Generates error object and delegates to framework's error handling (throwing in Koa, calling `next(err)` in Express)
 
-- Conventions and gotchas
-  - `express` and `restify` use the same codepath as `http` (they `require('./http')`). Changing `lib/http.js` affects both.
-  - `koa` uses a different control flow (throws vs `next()`), so test Koa-specific behaviour in `test/integration/koa` and `demos/koa`.
-  - Logging can be a string (treated as a log method name on `req.log`/`ctx.log`) or a function — preserve both code paths.
-  - The integration function sometimes returns a boolean (for plain `http` handlers) or uses `next()`/`throw` for frameworks; match current patterns when adding framework support.
+## Development Workflow
 
-- When adding features
-  - Add the new framework key to the `frameworks` map in `index.js`.
-  - Keep `checkMemory` / `loopbench` usage in `index.js` — these are the core signal sources used by all integrations.
-  - Update `lib/explain.js` and `lib/stats.js` for any changes to output shape so demos and tests continue to match expected strings/objects.
+### Testing
+```bash
+npm test                # Run all tests with Vitest
+npm run cov             # Coverage report
+npm run covr            # HTML coverage report
+```
 
-- Feedback: If any of these sections lack detail you'd like (for example, more usage examples, or a fuller list of scripted test cases), tell me which area to expand.
+**Vitest Configuration** ([vitest.config.js](../vitest.config.js)):
+- `threads: false`, `maxThreads: 1` - tests run sequentially to avoid timing conflicts
+- `testTimeout: 3000` - fail fast; tests should complete quickly or fail
+- `globals: true` - `test`, `expect`, `it` available without imports
+- Includes both unit tests and integration tests in same run
+
+**Key Test Patterns**:
+- Tests are Vitest-based but [test/integration/](../test/integration/) files include TAP-compatible wrapper for legacy compatibility
+- Unit tests in [test/index.js](../test/index.js) verify core options, state exposure, and validation
+- Integration tests per framework in `test/integration/{framework}/index.js` verify actual HTTP behavior
+- Tests mock `process.memoryUsage()` and use `sleep()` loops to trigger thresholds
+- **Always call `instance.stop()`** in test cleanup to prevent timer leaks and hanging tests
+- **Fail fast design**: Tests use short timeouts and immediate assertions; avoid long delays or polling
+- Use Promises with early resolution/rejection to catch failures immediately
+
+### Code Style
+- Standard.js linting (`npm run lint`)
+- **ES Modules (ESM)**: Project uses `"type": "module"` in package.json
+  - All imports/exports use ES module syntax: `import`/`export` (not `require`/`module.exports`)
+  - File extensions required in imports: `import http from './lib/http.js'` (not `./lib/http`)
+  - Use `export default` for main exports, named exports when appropriate
+- Pre-commit hooks run tests and linting
+
+### Benchmarks
+```bash
+npm run benchmarks      # Compare protected vs unprotected overhead for all frameworks
+```
+Located in [benchmarks/](../benchmarks/) - each has `included.js` (with protection) and `excluded.js` (without)
+
+## Project-Specific Conventions
+
+### Options Handling
+- All options have defaults defined in [index.js](../index.js#L15-L25)
+- `Object.assign({}, defaults, opts)` pattern for option merging
+- Disabled thresholds use `0` value (not `null`/`undefined`)
+- Validation: at least one threshold must be enabled (> 0)
+
+### Logging Patterns
+Two styles supported:
+1. **Log4j-style** (string): Expects `req.log[level]` or `ctx.log[level]` (works with pino, bunyan middleware)
+2. **Function**: Direct logging function (e.g., `logging: console.warn`)
+
+### Prototype Chain Manipulation
+The returned middleware function has the profiler object in its prototype chain ([index.js](../index.js#L86-L94)):
+```javascript
+Object.setPrototypeOf(integrate, profiler)
+```
+This allows accessing state via `instance.overload`, `instance.eventLoopDelay`, etc.
+
+### Memory Monitoring
+Manual memory checks (not event-driven) via `setInterval` with `unref()` to prevent blocking process exit ([index.js](../index.js#L67-L71))
+
+## Integration Points
+
+### External Dependencies
+- **loopbench**: Event loop delay monitoring library (main dependency)
+- Framework packages (express, koa) are devDependencies for testing only
+
+### Framework Adaptation Strategy
+When adding framework support:
+1. Study existing adapters - they're nearly identical in structure
+2. Key differences: argument signature (req/res/next vs ctx/next) and error handling
+3. Maintain consistent options validation and profiler interaction
+
+## Current Branch Context
+Working on `fix/vitest` branch - migrating from TAP to Vitest. Note the TAP compatibility wrapper in integration tests to support legacy test syntax during transition.

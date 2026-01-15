@@ -4,13 +4,11 @@ import loopbench from 'loopbench'
 import express from './lib/express.js'
 import http from './lib/http.js'
 import koa from './lib/koa.js'
-import restify from './lib/restify.js'
 
 const frameworks = {
   express,
   http,
-  koa,
-  restify
+  koa
 }
 
 const defaults = {

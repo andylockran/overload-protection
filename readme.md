@@ -1,6 +1,6 @@
 # overload-protection 
 
-Load detection and shedding capabilities for http, express, restify, and koa
+Load detection and shedding capabilities for http, express, and koa
 
 [![Build Status](https://travis-ci.org/davidmarkclements/overload-protection.svg?branch=master)](https://travis-ci.org/davidmarkclements/overload-protection)
 [![Coverage Status](https://coveralls.io/repos/github/davidmarkclements/overload-protection/badge.svg)](https://coveralls.io/github/davidmarkclements/overload-protection)
@@ -60,9 +60,9 @@ first. In default mode this means `overload-protection` will take over the respo
 and prevent any other middleware from executing (thus taking further potential pressure off
 of the process).
 
-Restify, and Koa all work in much the same way, call the `overload-protection`
+Koa works in much the same way, call the `overload-protection`
 module with the name of the framework, a config object and pass the resulting `protect`
-instance to `app.use` – e.g. Koa would be:
+instance to `app.use`:
 
 ```js
 const Koa = require('koa')
@@ -134,7 +134,6 @@ The `framework` argument is non-optional. It's a string and may be one of:
 
 * express
 * koa
-* restify
 * http
 
 The `opts` argument is optional, as are all properties.
@@ -216,7 +215,7 @@ was set to `warn` (`logging: 'warn'`) then `req.log.warn` is expected to be pres
 and be a function. A number of logging libraries follow this pattern, such as 
 [`bunyan-express`](http:/npm.im/bunyan-express) and all of the [`pino`](http://npm.im/pino) 
 middleware loggers ([`express-pino-logger`](http://npm.im/express), [`koa-pino-logger`](http://npm.im/koa-pino-logger), 
-[`restify-pino-logger`](http://npm.im/restify-pino-logger), [`pino-http`](http://npm.im/pino-http)).
+[`pino-http`](http://npm.im/pino-http)).
 
 If the application isn't using a request bound Log4j-style logger, the `logging` 
 option can be set to a function which receives a log message. This function is 
@@ -297,9 +296,8 @@ Corresponds to the `opts.maxRssBytes` option.
 - [koa](https://github.com/koajs/koa): Koa web app framework
 - [koa-router](https://github.com/alexmingoia/koa-router): Router middleware for koa. Provides RESTful resource routing.
 - [pre-commit](https://github.com/observing/pre-commit): Automatically install pre-commit hooks for your npm modules.
-- [restify](https://github.com/restify/node-restify): REST framework
 - [standard](https://github.com/standard/standard): JavaScript Standard Style
-- [tap](https://github.com/tapjs/node-tap): A Test-Anything-Protocol library
+- [vitest](https://vitest.dev): Unit test framework
 
 ## License
 

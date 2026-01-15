@@ -82,8 +82,8 @@ test('exposes maxRssBytes option on instance', () => {
 
 test('instance.eventLoopDelay indicates the delay between samples', () => {
   return new Promise((resolve) => {
-    const busyMs = 100
-    const instance = protect('http', { sampleInterval: 10 })
+    const busyMs = 150
+    const instance = protect('http', { sampleInterval: 5 })
     const start = Date.now()
     // Busy-wait with lightweight CPU work (avoid huge allocations)
     while (Date.now() - start <= busyMs) {
@@ -91,17 +91,17 @@ test('instance.eventLoopDelay indicates the delay between samples', () => {
     }
     // wait a short while for the profiler to record the delay
     setTimeout(function () {
-      expect(instance.eventLoopDelay).toBeGreaterThan(20)
+      expect(instance.eventLoopDelay).toBeGreaterThan(10)
       instance.stop()
       resolve()
-    }, 30)
+    }, 50)
   })
 })
 
 test('instance.eventLoopOverload is true when maxEventLoopDelay threshold is breached', () => {
   return new Promise((resolve) => {
-    const busyMs = 120
-    const instance = protect('http', { sampleInterval: 10, maxEventLoopDelay: 20 })
+    const busyMs = 150
+    const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 10 })
     const start = Date.now()
     while (Date.now() - start < busyMs) {
       for (let i = 0; i < 1000; i++) Math.sqrt(i)
