@@ -27,15 +27,19 @@ Daniel Khans article at <https://www.dynatrace.com/blog/understanding-garbage-co
 
 ## Installation
 
-### From npm
+### From npm (Official Package)
+
+The original `overload-protection` package is available on npm:
 
 ```bash
 npm install overload-protection
 ```
 
-### From GitHub Packages
+This is the official, stable package maintained at [davidmarkclements/overload-protection](https://github.com/davidmarkclements/overload-protection).
 
-To install the scoped version from GitHub Packages:
+### From GitHub Packages (This Fork)
+
+This is a fork with additional features (ESM support, Vitest migration, enhanced benchmarks). To install this specific version from GitHub Packages:
 
 ```bash
 npm install @andylockran/overload-protection --registry=https://npm.pkg.github.com
@@ -52,6 +56,8 @@ Then install:
 ```bash
 npm install @andylockran/overload-protection
 ```
+
+**Note:** Use the official `overload-protection` package unless you specifically need the enhancements from this fork.
 
 ## Usage
 
