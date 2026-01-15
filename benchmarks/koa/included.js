@@ -1,11 +1,11 @@
 'use strict'
 
-var Koa = require('koa')
-var Router = require('koa-router')
-var protect = require('../..')('koa')
+const Koa = require('koa')
+const Router = require('@koa/router')
+const protect = require('../..')('koa')
 
-var router = new Router()
-var app = new Koa()
+const router = new Router()
+const app = new Koa()
 
 app.use(protect)
 

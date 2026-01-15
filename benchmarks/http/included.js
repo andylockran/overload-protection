@@ -1,8 +1,8 @@
 'use strict'
 
-var http = require('http')
-var server = http.createServer(serve)
-var protect = require('../..')('http')
+const http = require('http')
+const server = http.createServer(serve)
+const protect = require('../..')('http')
 
 function serve (req, res) {
   if (protect(req, res) === true) return

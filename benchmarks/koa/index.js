@@ -1,8 +1,8 @@
 'use strict'
-var autocannon = require('autocannon')
+const autocannon = require('autocannon')
 
-var included = require('./included')
-var excluded = require('./excluded')
+let included = require('./included')
+let excluded = require('./excluded')
 
 console.log('koa with overload protection:')
 included = included.listen(3000)
@@ -25,8 +25,8 @@ var instance = autocannon({
     instance.stop()
     excluded.close()
   })
-  autocannon.track(instance, {renderProgressBar: true})
+  autocannon.track(instance, { renderProgressBar: true })
 })
 
 // just render results
-autocannon.track(instance, {renderProgressBar: true})
+autocannon.track(instance, { renderProgressBar: true })

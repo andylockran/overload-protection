@@ -78,7 +78,7 @@ export default function protect (framework, opts) {
     maxEventLoopDelay: opts.maxEventLoopDelay,
     maxHeapUsedBytes: opts.maxHeapUsedBytes,
     maxRssBytes: opts.maxRssBytes,
-    stop: stop
+    stop
   }
 
   const integrate = frameworks[framework](opts, profiler)

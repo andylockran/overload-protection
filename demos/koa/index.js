@@ -1,11 +1,11 @@
 'use strict'
 
-var Koa = require('koa')
-var Router = require('koa-router')
-var protect = require('../..')('koa')
+const Koa = require('koa')
+const Router = require('@koa/router')
+const protect = require('../..')('koa')
 
-var router = new Router()
-var app = new Koa()
+const router = new Router()
+const app = new Koa()
 
 app.use(protect)
 
@@ -15,7 +15,7 @@ router.get('/', async function (ctx) {
 
 app.use(router.routes())
 app.listen(3000, function () {
-  var req = require('http').get('http://localhost:3000')
+  const req = require('http').get('http://localhost:3000')
 
   req.on('response', function (res) {
     console.log('got status code', res.statusCode)
@@ -23,7 +23,7 @@ app.listen(3000, function () {
 
     setTimeout(function () {
       console.log('protect.overload after load', protect.overload)
-      var req = require('http').get('http://localhost:3000')
+      const req = require('http').get('http://localhost:3000')
 
       req.on('response', function (res) {
         console.log('got status code', res.statusCode)
@@ -42,6 +42,6 @@ app.listen(3000, function () {
 })
 
 function sleep (msec) {
-  var start = Date.now()
+  const start = Date.now()
   while (Date.now() - start < msec) {}
 }

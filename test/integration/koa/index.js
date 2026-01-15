@@ -2,7 +2,7 @@
 
 import http from 'http'
 import Koa from 'koa'
-import Router from 'koa-router'
+import Router from '@koa/router'
 import protection from '../../../index.js'
 
 // TAP-compatible wrapper: keep Vitest `test` behaviour for normal tests
@@ -53,17 +53,17 @@ function block (n) {
 }
 
 test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function (t) {
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     maxEventLoopDelay: 1
   })
 
-  var app = new Koa()
+  const app = new Koa()
 
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
-    var req = http.get('http://localhost:' + port)
+    const req = http.get('http://localhost:' + port)
     block(50000)
     req.on('response', function (res) {
       t.is(res.statusCode, 503)
@@ -75,7 +75,7 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function 
 })
 
 test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -84,19 +84,19 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxHeapUsedBytes: 40
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -109,7 +109,7 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
 })
 
 test('sends 503 when rss threshold is passed, as per maxRssBytes', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -118,19 +118,19 @@ test('sends 503 when rss threshold is passed, as per maxRssBytes', function (t) 
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -143,7 +143,7 @@ test('sends 503 when rss threshold is passed, as per maxRssBytes', function (t) 
 })
 
 test('sends Retry-After header as per clientRetrySecs', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -152,20 +152,20 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
     clientRetrySecs: 22
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         t.is(res.headers['retry-after'], '22')
@@ -179,7 +179,7 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
 })
 
 test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -188,20 +188,20 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
     clientRetrySecs: 0
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         t.is('retry-after' in res.headers, false)
@@ -215,7 +215,7 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
 })
 
 test('errorPropagationMode:false (default)', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -224,14 +224,14 @@ test('errorPropagationMode:false (default)', function (t) {
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
     errorPropagationMode: false
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
   app.use(function (ctx, next) {
     t.fail()
@@ -241,7 +241,7 @@ test('errorPropagationMode:false (default)', function (t) {
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -254,7 +254,7 @@ test('errorPropagationMode:false (default)', function (t) {
 })
 
 test('errorPropagationMode:true', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -263,14 +263,14 @@ test('errorPropagationMode:true', function (t) {
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
     errorPropagationMode: true
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.on('error', function () {}) // silence error log output
   app.use(function (ctx, next) {
     return next().catch(function (err) {
@@ -285,7 +285,7 @@ test('errorPropagationMode:true', function (t) {
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -298,7 +298,7 @@ test('errorPropagationMode:true', function (t) {
 })
 
 test('in default mode, production:false leads to high detail client response message', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -307,7 +307,7 @@ test('in default mode, production:false leads to high detail client response mes
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     production: false,
     sampleInterval: 5,
     maxEventLoopDelay: 0,
@@ -315,13 +315,13 @@ test('in default mode, production:false leads to high detail client response mes
     errorPropagationMode: false
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         res.once('data', function (msg) {
@@ -338,7 +338,7 @@ test('in default mode, production:false leads to high detail client response mes
 })
 
 test('in default mode, production:true leads to standard 503 client response message', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -347,7 +347,7 @@ test('in default mode, production:true leads to standard 503 client response mes
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     production: true,
     sampleInterval: 5,
     maxEventLoopDelay: 0,
@@ -355,13 +355,13 @@ test('in default mode, production:true leads to standard 503 client response mes
     errorPropagationMode: false
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         res.once('data', function (msg) {
@@ -378,7 +378,7 @@ test('in default mode, production:true leads to standard 503 client response mes
 })
 
 test('in errorPropagationMode production:false sets expose:true on error object', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -387,7 +387,7 @@ test('in errorPropagationMode production:false sets expose:true on error object'
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     production: false,
     sampleInterval: 5,
     maxEventLoopDelay: 0,
@@ -395,7 +395,7 @@ test('in errorPropagationMode production:false sets expose:true on error object'
     errorPropagationMode: true
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.on('error', function () {}) // silence error log output
   app.use(function (ctx, next) {
     return next().catch(function (err) {
@@ -410,7 +410,7 @@ test('in errorPropagationMode production:false sets expose:true on error object'
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -423,7 +423,7 @@ test('in errorPropagationMode production:false sets expose:true on error object'
 })
 
 test('in errorPropagationMode production:true sets expose:false on error object', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -432,7 +432,7 @@ test('in errorPropagationMode production:true sets expose:false on error object'
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     production: true,
     sampleInterval: 5,
     maxEventLoopDelay: 0,
@@ -440,7 +440,7 @@ test('in errorPropagationMode production:true sets expose:false on error object'
     errorPropagationMode: true
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.on('error', function () {}) // silence error log output
   app.use(function (ctx, next) {
     return next().catch(function (err) {
@@ -454,7 +454,7 @@ test('in errorPropagationMode production:true sets expose:false on error object'
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -467,7 +467,7 @@ test('in errorPropagationMode production:true sets expose:false on error object'
 })
 
 test('resumes usual operation once load pressure is reduced under threshold', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -476,14 +476,14 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40
   })
 
-  var app = new Koa()
-  var router = new Router()
+  const app = new Koa()
+  const router = new Router()
   app.use(protect)
   router.get('/', function (ctx, next) {
     ctx.body = 'content'
@@ -495,7 +495,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
   var server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:' + port)
+      const req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         process.memoryUsage = function () {
@@ -521,7 +521,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
 })
 
 test('if logging option is a string, when overloaded, writes log message using req.log as per level in string', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -530,14 +530,14 @@ test('if logging option is a string, when overloaded, writes log message using r
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
     logging: 'warn'
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(function (ctx, next) {
     ctx.log = ctx.req.log = {
       warn: function (msg) {
@@ -561,7 +561,7 @@ test('if logging option is a string, when overloaded, writes log message using r
 })
 
 test('if logging option is a function, when overloaded calls the function with heavy load message', function (t) {
-  var memoryUsage = process.memoryUsage
+  const memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
       rss: 99999,
@@ -583,7 +583,7 @@ test('if logging option is a function, when overloaded calls the function with h
     }
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(0, function () {
@@ -595,12 +595,12 @@ test('if logging option is a function, when overloaded calls the function with h
 })
 
 test('if logStatsOnReq is true and if logging option is a string, writes log message using req.log as per level in string for every request', function (t) {
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     logging: 'info',
     logStatsOnReq: true
   })
   t.plan(1)
-  var app = new Koa()
+  const app = new Koa()
   app.use(function (ctx, next) {
     ctx.log = ctx.req.log = {
       info: function (msg) {
@@ -651,7 +651,7 @@ test('if logStatsOnReq is true and logging option is a function, calls the funct
     }
   })
 
-  var app = new Koa()
+  const app = new Koa()
   app.use(protect)
 
   var server = app.listen(3001, function () {
