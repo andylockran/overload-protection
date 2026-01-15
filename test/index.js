@@ -1,8 +1,6 @@
 "use strict"
 import protect from '../index.js'
 
-const { test, expect } = global
-
 test('throws if framework is unspecified', () => {
   expect(() => protect()).toThrow()
 })

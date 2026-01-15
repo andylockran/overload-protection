@@ -2,29 +2,30 @@
 
 import http from 'http'
 import protection from '../../../index.js'
-const { test, expect } = global
 
 // Inline minimal shim to run existing TAP-style tests under Vitest
-var test = function (name, fn) {
-  it(name, async () => {
-    return new Promise((resolve, reject) => {
-      const t = {
-        is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
-        same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
-        ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
-        fail: (msg) => reject(new Error(msg || 'fail')),
-        throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
-        plan: function () {},
-        pass: function () {},
-        end: function () { resolve() }
-      }
-      try {
-        const maybe = fn(t)
-        if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-        setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
-      } catch (err) { reject(err) }
+if (typeof global.test !== 'function') {
+  global.test = function (name, fn) {
+    it(name, async () => {
+      return new Promise((resolve, reject) => {
+        const t = {
+          is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
+          same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
+          ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
+          fail: (msg) => reject(new Error(msg || 'fail')),
+          throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
+          plan: function () {},
+          pass: function () {},
+          end: function () { resolve() }
+        }
+        try {
+          const maybe = fn(t)
+          if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
+          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+        } catch (err) { reject(err) }
+      })
     })
-  })
+  }
 }
 
 function sleep (msec) {

@@ -6,19 +6,17 @@ try {
   const _r = await import('restify')
   restify = _r && (_r.default || _r)
 } catch (e) {
-  // If restify or one of its deps fails to load (native parser, etc.),
-  // skip the restify integration tests rather than crashing the runner.
-  // Define a no-op test shim that marks tests as skipped.
+  // If restify or one of its deps fails to load, skip restify tests.
   // eslint-disable-next-line no-console
   console.warn('restify import failed; skipping restify integration tests:', e.message)
-  var test = function (name, fn) { it.skip(name, () => {}) }
+  global.test = function (name, fn) { it.skip(name, () => {}) }
 }
 
 import protection from '../../../index.js'
 
 // Inline minimal shim to run existing TAP-style tests under Vitest without external adapter
-if (typeof test === 'undefined') {
-  var test = function (name, fn) {
+if (typeof global.test === 'undefined') {
+  global.test = function (name, fn) {
     it(name, async () => {
       return new Promise((resolve, reject) => {
         const t = {
@@ -86,9 +84,9 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
   server.use(protect)
   server.get('/', async function (req, res) { res.end('content') })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -120,9 +118,9 @@ test('sends 503 when heap used threshold is passed, as per maxRssBytes', functio
   server.use(protect)
   server.get('/', async function (req, res) { res.end('content') })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -155,9 +153,9 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
   server.use(protect)
   server.get('/', async function (req, res) { res.end('content') })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         t.is(res.headers['retry-after'], '22')
@@ -191,9 +189,9 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
   server.use(protect)
   server.get('/', async function (req, res) { res.end('content') })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         t.is('retry-after' in res.headers, false)
@@ -231,9 +229,9 @@ test('errorPropagationMode:false (default)', function (t) {
     next()
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -271,9 +269,9 @@ test('errorPropagationMode:true', function (t) {
     res.end('err message')
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -307,9 +305,9 @@ test('in default mode, production:false leads to high detail client response mes
   server.use(protect)
   server.get('/', async function (req, res) { res.end('content') })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         res.once('data', function (msg) {
@@ -347,9 +345,9 @@ test('in default mode, production:true leads to standard 503 client response mes
   server.use(protect)
   server.get('/', async function (req, res) { res.end('content') })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         res.once('data', function (msg) {
@@ -392,9 +390,9 @@ test('in errorPropagationMode production:false sets expose:true on error object'
     res.end('err message')
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -433,9 +431,9 @@ test('in errorPropagationMode production:true sets expose:false on error object'
     res.end('err message')
   })
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+    server.listen(0, function () { const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -481,7 +479,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
           }
         }
         setTimeout(function () {
-          http.get('http://localhost:3000').on('response', function (res) {
+          http.get('http://localhost:' + port).on('response', function (res) {
             t.is(res.statusCode, 200)
             server.close()
             protect.stop()
@@ -529,7 +527,7 @@ test('if logging option is a string, when overloaded, writes log message using r
 
   server.listen(3000, function () {
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
@@ -563,7 +561,7 @@ test('if logging option is a function, when overloaded calls the function with h
 
   server.listen(3000, function () {
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
@@ -599,7 +597,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
   server.get('/', async function (req, res) { res.end('content') })
   server.listen(3000, function () {
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })

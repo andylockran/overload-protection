@@ -3,29 +3,30 @@
 import http from 'http'
 import express from 'express'
 import protection from '../../../index.js'
-const { test, expect } = global
 
 // Inline minimal shim to run existing TAP-style tests under Vitest
-var test = function (name, fn) {
-  it(name, async () => {
-    return new Promise((resolve, reject) => {
-      const t = {
-        is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
-        same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
-        ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
-        fail: (msg) => reject(new Error(msg || 'fail')),
-        throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
-        plan: function () {},
-        pass: function () {},
-        end: function () { resolve() }
-      }
-      try {
-        const maybe = fn(t)
-        if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-        setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
-      } catch (err) { reject(err) }
+if (typeof global.test !== 'function') {
+  global.test = function (name, fn) {
+    it(name, async () => {
+      return new Promise((resolve, reject) => {
+        const t = {
+          is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
+          same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
+          ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
+          fail: (msg) => reject(new Error(msg || 'fail')),
+          throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
+          plan: function () {},
+          pass: function () {},
+          end: function () { resolve() }
+        }
+        try {
+          const maybe = fn(t)
+          if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
+          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+        } catch (err) { reject(err) }
+      })
     })
-  })
+  }
 }
 
 function sleep (msec) {
@@ -42,36 +43,36 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', () => {
     var server = http.createServer(function (req, res) {
       sleep(500)
       app(req, res)
-    })
+    import protection from '../../../index.js'
 
     server.listen(0, function () {
       const port = server.address().port
-      var req = http.get('http://localhost:' + port)
-      req.on('response', function (res) {
-        try {
-          expect(res.statusCode).toBe(503)
-          protect.stop()
-          server.close()
-          resolve()
-        } catch (err) { reject(err) }
-      }).on('error', reject).end()
-    })
-  })
-})
-
-test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', () => {
-  return new Promise((resolve, reject) => {
-    var memoryUsage = process.memoryUsage
-    process.memoryUsage = function () { return { rss: 99999, heapTotal: 9999, heapUsed: 999, external: 99 } }
-    var protect = protection('express', { sampleInterval: 5, maxEventLoopDelay: 0, maxHeapUsedBytes: 40 })
-
-    var app = express()
-    app.use(protect)
-    var server = http.createServer(app)
-
+    if (typeof global.test !== 'function') {
+      global.test = function (name, fn) {
+        it(name, async () => {
+          return new Promise((resolve, reject) => {
+            const t = {
+              is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
+              same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
+              ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
+              fail: (msg) => reject(new Error(msg || 'fail')),
+              throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
+              plan: function () {},
+              pass: function () {},
+              end: function () { resolve() }
+            }
+            try {
+              const maybe = fn(t)
+              if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
+              setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+            } catch (err) { reject(err) }
+          })
+        })
+      }
+    }
     server.listen(0, function () {
       const port = server.address().port
-      setTimeout(function () {
+
         var req = http.get('http://localhost:' + port)
         req.on('response', function (res) {
           try {
@@ -154,7 +155,7 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
       external: 99
     }
   }
-  var protect = protection('express', {
+
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
@@ -498,7 +499,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
           }
         }
         setTimeout(function () {
-          http.get('http://localhost:3000').on('response', function (res) {
+          http.get('http://localhost:' + port).on('response', function (res) {
             t.is(res.statusCode, 200)
             server.close()
             protect.stop()
