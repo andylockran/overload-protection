@@ -25,6 +25,34 @@ Current supported metrics are:
 For a great explanation of Used Heap Memory vs Resident Set Size see 
 Daniel Khans article at <https://www.dynatrace.com/blog/understanding-garbage-collection-and-hunting-memory-leaks-in-node-js>   
 
+## Installation
+
+### From npm
+
+```bash
+npm install overload-protection
+```
+
+### From GitHub Packages
+
+To install the scoped version from GitHub Packages:
+
+```bash
+npm install @andylockran/overload-protection --registry=https://npm.pkg.github.com
+```
+
+Or configure your `.npmrc`:
+
+```
+@andylockran:registry=https://npm.pkg.github.com
+```
+
+Then install:
+
+```bash
+npm install @andylockran/overload-protection
+```
+
 ## Usage
 
 Create a config object for your thresholds (and other `overload-protection`)

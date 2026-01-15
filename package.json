@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "overload-protection",
-  "version": "1.2.3",
+  "version": "2.0.0",
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
