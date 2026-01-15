@@ -65,8 +65,11 @@ export default function protect (framework, opts) {
   const maxHeapUsedBytes = opts.maxHeapUsedBytes
   const maxRssBytes = opts.maxRssBytes
 
-  const timer = (maxHeapUsedBytes > 0 || maxRssBytes > 0) &&
-    setInterval(checkMemory, opts.sampleInterval).unref()
+  let timer
+  if (maxHeapUsedBytes > 0 || maxRssBytes > 0) {
+    timer = setInterval(checkMemory, opts.sampleInterval)
+    if (timer && typeof timer.unref === 'function') timer.unref()
+  }
 
   const profiler = {
     overload: false,
@@ -104,6 +107,6 @@ export default function protect (framework, opts) {
 
   function stop () {
     if (eventLoopProfiler) eventLoopProfiler.stop()
-    clearInterval(timer)
+    if (timer) clearInterval(timer)
   }
 }

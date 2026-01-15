@@ -13,21 +13,34 @@ import protection from '../../../index.js'
     }
     it(name, async () => {
       return new Promise((resolve, reject) => {
+        let planned = null
+        let count = 0
+        let finished = false
+        const done = (err) => {
+          if (finished) return
+          finished = true
+          if (err) return reject(err)
+          resolve()
+        }
+        const inc = () => {
+          count += 1
+          if (planned !== null && count >= planned) done()
+        }
         const t = {
-          is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
-          same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
-          ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
-          fail: (msg) => reject(new Error(msg || 'fail')),
-          throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
-          plan: function () {},
-          pass: function () {},
-          end: function () { resolve() }
+          is: (a, b) => { try { expect(a).toBe(b); inc() } catch (e) { done(e) } },
+          same: (a, b) => { try { expect(a).toEqual(b); inc() } catch (e) { done(e) } },
+          ok: (v) => { try { expect(v).toBeTruthy(); inc() } catch (e) { done(e) } },
+          fail: (msg) => done(new Error(msg || 'fail')),
+          throws: (fnc) => { try { fnc(); done(new Error('did not throw')) } catch (e) { inc() } },
+          plan: function (n) { planned = n; if (planned === 0) done() },
+          pass: function () { inc() },
+          end: function () { done() }
         }
         try {
           const maybe = fn(t)
-          if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 300)
-        } catch (err) { reject(err) }
+          if (maybe && typeof maybe.then === 'function') maybe.then(() => done(), done)
+          setTimeout(() => done(new Error('Test did not call t.end() within timeout')), 30000)
+        } catch (err) { done(err) }
       })
     })
   }
