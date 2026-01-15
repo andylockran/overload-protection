@@ -4,8 +4,22 @@ import protect from '../../index.js'
 const protectMiddleware = protect('http')
 const server = http.createServer(serve)
 
+function cpuWork (ms) {
+  const start = Date.now()
+  while (Date.now() - start < ms) {
+    let hash = 0
+    for (let i = 0; i < 10000; i++) {
+      for (let j = 0; j < 10; j++) {
+        hash = ((hash << 5) - hash) + i * j
+        hash = hash & hash
+      }
+    }
+  }
+}
+
 function serve (req, res) {
   if (protectMiddleware(req, res) === true) return
+  cpuWork(5)
   res.end('content')
 }
 

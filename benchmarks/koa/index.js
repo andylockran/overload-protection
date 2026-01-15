@@ -6,7 +6,7 @@ console.log('koa with overload protection:')
 const includedServer = included.listen(3000)
 let instance = autocannon({
   url: 'http://localhost:3000',
-  connections: 10,
+  connections: 100,
   pipelining: 1,
   duration: 10
 }, function () {
@@ -16,15 +16,15 @@ let instance = autocannon({
   const excludedServer = excluded.listen(3000)
   instance = autocannon({
     url: 'http://localhost:3000',
-    connections: 10,
+    connections: 100,
     pipelining: 1,
     duration: 10
   }, function () {
     instance.stop()
     excludedServer.close()
   })
-  autocannon.track(instance, { renderProgressBar: true })
+  autocannon.track(instance, { renderProgressBar: true, renderStatusCodes: true })
 })
 
 // just render results
-autocannon.track(instance, { renderProgressBar: true })
+autocannon.track(instance, { renderProgressBar: true, renderStatusCodes: true })
