@@ -1,5 +1,5 @@
 "use strict"
-const protect = require('../')
+import protect from '../index.js'
 
 const { test, expect } = global
 

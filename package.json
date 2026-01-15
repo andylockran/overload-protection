@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "overload-protection",
   "version": "1.2.3",
   "main": "index.js",

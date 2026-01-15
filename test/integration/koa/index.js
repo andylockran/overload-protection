@@ -1,8 +1,9 @@
 'use strict'
-var http = require('http')
-var Koa = require('koa')
-var Router = require('koa-router')
-var protection = require('../../..')
+
+import http from 'http'
+import Koa from 'koa'
+import Router from 'koa-router'
+import protection from '../../../index.js'
 
 // Inline minimal shim to run existing TAP-style tests under Vitest without external adapter
 var test = function (name, fn) {
@@ -28,7 +29,7 @@ var test = function (name, fn) {
 }
 
 function block (n) {
-  while (n--) { JSON.parse(JSON.stringify(require('../../../package.json'))) }
+  while (n--) { JSON.parse(JSON.stringify({ name: 'overload-protection' })) }
 }
 
 test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function (t) {
