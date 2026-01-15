@@ -350,24 +350,12 @@ test('instance.overload is true if instance.rssOverload is true', () => {
   })
 })
 
-if (Object.setPrototypeOf) {
-  test('Supports legacy JS (__proto__)', () => {
-    const setPrototypeOf = Object.setPrototypeOf
-    delete Object.setPrototypeOf
-    const instance = protect('http')
-    // overload wouldn't be in instance if __proto__ wasn't set
-    expect('overload' in instance).toBe(true)
-    Object.setPrototypeOf = setPrototypeOf
-  })
-}
-
-if (!Object.setPrototypeOf) {
-  test('Supports modern/future JS (Object.setPrototypeOf)', () => {
-    // eslint-disable-next-line no-proto
-    Object.setPrototypeOf = function (o, proto) { o.__proto__ = proto }
-    const instance = protect('http')
-    // overload wouldn't be in instance if __proto__ wasn't set
-    expect('overload' in instance).toBe(true)
-    delete Object.setPrototypeOf
-  })
-}
+test('Exposes profiler state via prototype chain', () => {
+  const instance = protect('http')
+  // Verify prototype chain allows access to profiler properties
+  expect('overload' in instance).toBe(true)
+  expect('eventLoopOverload' in instance).toBe(true)
+  expect('heapUsedOverload' in instance).toBe(true)
+  expect('rssOverload' in instance).toBe(true)
+  instance.stop()
+})

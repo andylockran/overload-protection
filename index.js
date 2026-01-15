@@ -82,15 +82,8 @@ export default function protect (framework, opts) {
   }
 
   const integrate = frameworks[framework](opts, profiler)
-  if (Object.setPrototypeOf) {
-    Object.setPrototypeOf(profiler, Function.prototype)
-    Object.setPrototypeOf(integrate, profiler)
-  } else {
-    // eslint-disable-next-line
-    profiler.__proto__ = Function.prototype
-    // eslint-disable-next-line
-    integrate.__proto__ = profiler
-  }
+  Object.setPrototypeOf(profiler, Function.prototype)
+  Object.setPrototypeOf(integrate, profiler)
 
   return integrate
 
