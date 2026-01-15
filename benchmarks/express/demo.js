@@ -16,7 +16,7 @@ const monitor = setInterval(() => {
     rejected: 0,
     accepted: 0
   }
-  
+
   if (stats.overload !== lastState.overload) {
     if (stats.overload) {
       console.log(`\n🚨 OVERLOAD DETECTED - Event loop delay: ${stats.delay.toFixed(1)}ms (threshold: ${included.maxEventLoopDelay}ms)`)
@@ -36,36 +36,45 @@ let instance = autocannon({
   pipelining: 1,
   duration: 5
 }, function (err, result) {
+  if (err) {
+    console.error('Error during autocannon run:', err)
+  }
   console.log('\n--- Light Load Results ---')
   printResults(result)
-  
+
   console.log('\n\nNow increasing to HEAVY LOAD (100 connections)...')
   console.log('This should trigger overload protection!\n')
-  
+
   instance = autocannon({
     url: 'http://localhost:3000',
     connections: 100,
     pipelining: 1,
     duration: 10
   }, function (err, result) {
+    if (err) {
+      console.error('Error during autocannon run:', err)
+    }
     console.log('\n--- Heavy Load Results ---')
     printResults(result)
-    
+
     console.log('\n\nDropping back to RECOVERY LOAD (20 connections)...')
     console.log('Watch the system recover!\n')
-    
+
     instance = autocannon({
       url: 'http://localhost:3000',
       connections: 20,
       pipelining: 1,
       duration: 5
     }, function (err, result) {
+      if (err) {
+        console.error('Error during autocannon run:', err)
+      }
       console.log('\n--- Recovery Load Results ---')
       printResults(result)
-      
+
       clearInterval(monitor)
       server.close()
-      
+
       console.log('\n=== DEMO COMPLETE ===\n')
       console.log('Summary: Overload protection automatically shed load during heavy')
       console.log('traffic by rejecting requests (503), preventing total system collapse.')
@@ -83,7 +92,7 @@ function printResults (result) {
   const rejected = result['5xx']
   const acceptRate = ((accepted / total) * 100).toFixed(1)
   const rejectRate = ((rejected / total) * 100).toFixed(1)
-  
+
   console.log(`Total Requests: ${total}`)
   console.log(`✓ Accepted (200): ${accepted} (${acceptRate}%)`)
   console.log(`✗ Rejected (503): ${rejected} (${rejectRate}%)`)
