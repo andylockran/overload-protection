@@ -3,11 +3,11 @@
   "version": "1.2.3",
   "main": "index.js",
   "scripts": {
-    "test": "tap test",
+    "test": "vitest",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
-    "cov": "tap --cov test",
-    "covr": "tap --coverage-report=html test",
+    "cov": "vitest --coverage",
+    "covr": "vitest --coverage --coverage-report=html",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
@@ -42,7 +42,7 @@
     "pre-commit": "^1.2.2",
     "restify": "^11.0.0",
     "standard": "^10.0.3",
-    "tap": "^10.7.2"
+    "vitest": "^1.0.0"
   },
   "dependencies": {
     "loopbench": "^1.2.0"

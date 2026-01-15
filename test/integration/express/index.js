@@ -4,137 +4,121 @@ var http = require('http')
 var express = require('express')
 
 var protection = require('../../..')
-var test = require('tap').test
+const { test, expect } = global
 
 function sleep (msec) {
   var start = Date.now()
   while (Date.now() - start < msec) {}
 }
 
-test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function (t) {
-  var protect = protection('express', {
-    maxEventLoopDelay: 1
-  })
+test('sends 503 when event loop is overloaded, per maxEventLoopDelay', () => {
+  return new Promise((resolve, reject) => {
+    var protect = protection('express', { maxEventLoopDelay: 1 })
 
-  var app = express()
-  app.use(protect)
-  var server = http.createServer(function (req, res) {
-    sleep(500)
-    app(req, res)
-  })
+    var app = express()
+    app.use(protect)
+    var server = http.createServer(function (req, res) {
+      sleep(500)
+      app(req, res)
+    })
 
-  server.listen(3000, function () {
-    var req = http.get('http://localhost:3000')
-    req.on('response', function (res) {
-      t.is(res.statusCode, 503)
-      protect.stop()
-      server.close()
-      t.end()
-    }).end()
+    server.listen(0, function () {
+      const port = server.address().port
+      var req = http.get('http://localhost:' + port)
+      req.on('response', function (res) {
+        try {
+          expect(res.statusCode).toBe(503)
+          protect.stop()
+          server.close()
+          resolve()
+        } catch (err) { reject(err) }
+      }).on('error', reject).end()
+    })
   })
 })
 
-test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', function (t) {
-  var memoryUsage = process.memoryUsage
-  process.memoryUsage = function () {
-    return {
-      rss: 99999,
-      heapTotal: 9999,
-      heapUsed: 999,
-      external: 99
-    }
-  }
-  var protect = protection('express', {
-    sampleInterval: 5,
-    maxEventLoopDelay: 0,
-    maxHeapUsedBytes: 40
-  })
+test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', () => {
+  return new Promise((resolve, reject) => {
+    var memoryUsage = process.memoryUsage
+    process.memoryUsage = function () { return { rss: 99999, heapTotal: 9999, heapUsed: 999, external: 99 } }
+    var protect = protection('express', { sampleInterval: 5, maxEventLoopDelay: 0, maxHeapUsedBytes: 40 })
 
-  var app = express()
-  app.use(protect)
-  var server = http.createServer(app)
+    var app = express()
+    app.use(protect)
+    var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('sends 503 when heap used threshold is passed, as per maxRssBytes', function (t) {
-  var memoryUsage = process.memoryUsage
-  process.memoryUsage = function () {
-    return {
-      rss: 99999,
-      heapTotal: 9999,
-      heapUsed: 999,
-      external: 99
-    }
-  }
-  var protect = protection('express', {
-    sampleInterval: 5,
-    maxEventLoopDelay: 0,
-    maxRssBytes: 40
-  })
+test('sends 503 when heap used threshold is passed, as per maxRssBytes', () => {
+  return new Promise((resolve, reject) => {
+    var memoryUsage = process.memoryUsage
+    process.memoryUsage = function () { return { rss: 99999, heapTotal: 9999, heapUsed: 999, external: 99 } }
+    var protect = protection('express', { sampleInterval: 5, maxEventLoopDelay: 0, maxRssBytes: 40 })
 
-  var app = express()
-  app.use(protect)
-  var server = http.createServer(app)
+    var app = express()
+    app.use(protect)
+    var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('sends Retry-After header as per clientRetrySecs', function (t) {
-  var memoryUsage = process.memoryUsage
-  process.memoryUsage = function () {
-    return {
-      rss: 99999,
-      heapTotal: 9999,
-      heapUsed: 999,
-      external: 99
-    }
-  }
-  var protect = protection('express', {
-    sampleInterval: 5,
-    maxEventLoopDelay: 0,
-    maxRssBytes: 40,
-    clientRetrySecs: 22
-  })
+test('sends Retry-After header as per clientRetrySecs', () => {
+  return new Promise((resolve, reject) => {
+    var memoryUsage = process.memoryUsage
+    process.memoryUsage = function () { return { rss: 99999, heapTotal: 9999, heapUsed: 999, external: 99 } }
+    var protect = protection('express', { sampleInterval: 5, maxEventLoopDelay: 0, maxRssBytes: 40, clientRetrySecs: 22 })
 
-  var app = express()
-  app.use(protect)
-  var server = http.createServer(app)
+    var app = express()
+    app.use(protect)
+    var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        t.is(res.headers['retry-after'], '22')
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            expect(res.headers['retry-after']).toBe('22')
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
@@ -159,22 +143,27 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        t.is('retry-after' in res.headers, false)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            expect('retry-after' in res.headers).toBe(false)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('errorPropagationMode:false (default)', function (t) {
+test('errorPropagationMode:false (default)', () => {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -194,25 +183,30 @@ test('errorPropagationMode:false (default)', function (t) {
   var app = express()
   app.use(protect)
   app.use(function () {
-    t.fail()
+    throw new Error('should not be called')
   })
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('errorPropagationMode:true', function (t) {
+test('errorPropagationMode:true', () => {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -232,27 +226,36 @@ test('errorPropagationMode:true', function (t) {
   var app = express()
   app.use(protect)
   app.use(function (err, req, res, next) {
-    t.ok(err)
-    t.is(err.statusCode, 503)
+    try {
+      expect(err).toBeTruthy()
+      expect(err.statusCode).toBe(503)
+    } catch (e) {
+      // still respond
+    }
     res.end('err message')
   })
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('in default mode, production:false leads to high detail client response message', function (t) {
+test('in default mode, production:false leads to high detail client response message', () => {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -274,25 +277,30 @@ test('in default mode, production:false leads to high detail client response mes
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        res.once('data', function (msg) {
-          msg = msg.toString()
-          t.is(msg, 'Server experiencing heavy load: (rss)')
-          server.close()
-          protect.stop()
-          process.memoryUsage = memoryUsage
-          t.end()
-        })
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            res.once('data', function (msg) {
+              msg = msg.toString()
+              expect(msg).toBe('Server experiencing heavy load: (rss)')
+              server.close()
+              protect.stop()
+              process.memoryUsage = memoryUsage
+              resolve()
+            })
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('in default mode, production:true leads to standard 503 client response message', function (t) {
+test('in default mode, production:true leads to standard 503 client response message', () => {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -314,25 +322,30 @@ test('in default mode, production:true leads to standard 503 client response mes
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        res.once('data', function (msg) {
-          msg = msg.toString()
-          t.is(msg, 'Service Unavailable')
-          server.close()
-          protect.stop()
-          process.memoryUsage = memoryUsage
-          t.end()
-        })
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            res.once('data', function (msg) {
+              msg = msg.toString()
+              expect(msg).toBe('Service Unavailable')
+              server.close()
+              protect.stop()
+              process.memoryUsage = memoryUsage
+              resolve()
+            })
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('in errorPropagationMode production:false sets expose:true on error object', function (t) {
+test('in errorPropagationMode production:false sets expose:true on error object', () => {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -353,27 +366,34 @@ test('in errorPropagationMode production:false sets expose:true on error object'
   var app = express()
   app.use(protect)
   app.use(function (err, req, res, next) {
-    t.ok(err)
-    t.is(err.expose, true)
+    try {
+      expect(err).toBeTruthy()
+      expect(err.expose).toBe(true)
+    } catch (e) {}
     res.end('err message')
   })
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
-test('in errorPropagationMode production:true sets expose:false on error object', function (t) {
+test('in errorPropagationMode production:true sets expose:false on error object', () => {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -394,23 +414,30 @@ test('in errorPropagationMode production:true sets expose:false on error object'
   var app = express()
   app.use(protect)
   app.use(function (err, req, res, next) {
-    t.ok(err)
-    t.is(err.expose, false)
+    try {
+      expect(err).toBeTruthy()
+      expect(err.expose).toBe(false)
+    } catch (e) {}
     res.end('err message')
   })
   var server = http.createServer(app)
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+  return new Promise((resolve, reject) => {
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 

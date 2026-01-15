@@ -3,67 +3,64 @@
 var http = require('http')
 
 var protection = require('../../..')
-var test = require('tap').test
+const { test, expect } = global
 
 function sleep (msec) {
   var start = Date.now()
   while (Date.now() - start < msec) {}
 }
 
-test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function (t) {
-  var protect = protection('http', {
-    maxEventLoopDelay: 1
-  })
+test('sends 503 when event loop is overloaded, per maxEventLoopDelay', () => {
+  return new Promise((resolve, reject) => {
+    var protect = protection('http', { maxEventLoopDelay: 1 })
 
-  var server = http.createServer(function serve (req, res) {
-    sleep(500)
-    if (protect(req, res) === true) return
-    res.end('content')
-  })
+    var server = http.createServer(function serve (req, res) {
+      sleep(500)
+      if (protect(req, res) === true) return
+      res.end('content')
+    })
 
-  server.listen(3000, function () {
-    var req = http.get('http://localhost:3000')
-    req.on('response', function (res) {
-      t.is(res.statusCode, 503)
-      protect.stop()
-      server.close()
-      t.end()
-    }).end()
+    server.listen(0, function () {
+      const port = server.address().port
+      var req = http.get('http://localhost:' + port)
+      req.on('response', function (res) {
+        try {
+          expect(res.statusCode).toBe(503)
+          protect.stop()
+          server.close()
+          resolve()
+        } catch (err) { reject(err) }
+      }).on('error', reject).end()
+    })
   })
 })
 
-test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', function (t) {
-  var memoryUsage = process.memoryUsage
-  process.memoryUsage = function () {
-    return {
-      rss: 99999,
-      heapTotal: 9999,
-      heapUsed: 999,
-      external: 99
-    }
-  }
-  var protect = protection('http', {
-    sampleInterval: 5,
-    maxEventLoopDelay: 0,
-    maxHeapUsedBytes: 40
-  })
+test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', () => {
+  return new Promise((resolve, reject) => {
+    var memoryUsage = process.memoryUsage
+    process.memoryUsage = function () { return { rss: 99999, heapTotal: 9999, heapUsed: 999, external: 99 } }
+    var protect = protection('http', { sampleInterval: 5, maxEventLoopDelay: 0, maxHeapUsedBytes: 40 })
 
-  var server = http.createServer(function serve (req, res) {
-    if (protect(req, res) === true) return
-    res.end('content')
-  })
+    var server = http.createServer(function serve (req, res) {
+      if (protect(req, res) === true) return
+      res.end('content')
+    })
 
-  server.listen(3000, function () {
-    setTimeout(function () {
-      var req = http.get('http://localhost:3000')
-      req.on('response', function (res) {
-        t.is(res.statusCode, 503)
-        server.close()
-        protect.stop()
-        process.memoryUsage = memoryUsage
-        t.end()
-      }).end()
-    }, 6)
+    server.listen(0, function () {
+      const port = server.address().port
+      setTimeout(function () {
+        var req = http.get('http://localhost:' + port)
+        req.on('response', function (res) {
+          try {
+            expect(res.statusCode).toBe(503)
+            server.close()
+            protect.stop()
+            process.memoryUsage = memoryUsage
+            resolve()
+          } catch (err) { reject(err) }
+        }).on('error', reject).end()
+      }, 6)
+    })
   })
 })
 
