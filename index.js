@@ -1,15 +1,17 @@
 'use strict'
 
-var loopbench = require('loopbench')
+import loopbench from 'loopbench'
+import express from './lib/express.js'
+import http from './lib/http.js'
+import koa from './lib/koa.js'
 
-var frameworks = {
-  express: require('./lib/express'),
-  http: require('./lib/http'),
-  koa: require('./lib/koa'),
-  restify: require('./lib/restify')
+const frameworks = {
+  express,
+  http,
+  koa
 }
 
-var defaults = {
+const defaults = {
   production: process.env.NODE_ENV === 'production',
   errorPropagationMode: false,
   clientRetrySecs: 1,
@@ -21,7 +23,7 @@ var defaults = {
   logStatsOnReq: false
 }
 
-function protect (framework, opts) {
+export default function protect (framework, opts) {
   opts = Object.assign({}, defaults, opts)
   if (typeof framework === 'undefined') {
     throw Error('Please specify a framework')
@@ -35,7 +37,8 @@ function protect (framework, opts) {
   if (opts.logStatsOnReq && opts.logging === false) {
     throw Error('logStatsOnReq cannot be enabled unless logging is also enabled')
   }
-  var update = (opts.maxEventLoopDelay > 0)
+  let eventLoopProfiler
+  const update = (opts.maxEventLoopDelay > 0)
     ? function update () {
       profiler.eventLoopOverload = eventLoopProfiler.overLimit
       profiler.eventLoopDelay = eventLoopProfiler.delay
@@ -48,7 +51,7 @@ function protect (framework, opts) {
     }
 
   if (opts.maxEventLoopDelay > 0) {
-    var eventLoopProfiler = loopbench({
+    eventLoopProfiler = loopbench({
       sampleInterval: opts.sampleInterval,
       limit: opts.maxEventLoopDelay
     })
@@ -57,13 +60,16 @@ function protect (framework, opts) {
     eventLoopProfiler.on('unload', update)
   }
 
-  var maxHeapUsedBytes = opts.maxHeapUsedBytes
-  var maxRssBytes = opts.maxRssBytes
+  const maxHeapUsedBytes = opts.maxHeapUsedBytes
+  const maxRssBytes = opts.maxRssBytes
 
-  var timer = (maxHeapUsedBytes > 0 || maxRssBytes > 0) &&
-    setInterval(checkMemory, opts.sampleInterval).unref()
+  let timer
+  if (maxHeapUsedBytes > 0 || maxRssBytes > 0) {
+    timer = setInterval(checkMemory, opts.sampleInterval)
+    if (timer && typeof timer.unref === 'function') timer.unref()
+  }
 
-  var profiler = {
+  const profiler = {
     overload: false,
     eventLoopOverload: false,
     heapUsedOverload: false,
@@ -72,24 +78,19 @@ function protect (framework, opts) {
     maxEventLoopDelay: opts.maxEventLoopDelay,
     maxHeapUsedBytes: opts.maxHeapUsedBytes,
     maxRssBytes: opts.maxRssBytes,
-    stop: stop
+    stop
   }
 
-  var integrate = frameworks[framework](opts, profiler)
-  if (Object.setPrototypeOf) {
-    Object.setPrototypeOf(profiler, Function.prototype)
-    Object.setPrototypeOf(integrate, profiler)
-  } else {
-    profiler.__proto__ = Function.prototype // eslint-disable-line
-    integrate.__proto__ = profiler // eslint-disable-line
-  }
+  const integrate = frameworks[framework](opts, profiler)
+  Object.setPrototypeOf(profiler, Function.prototype)
+  Object.setPrototypeOf(integrate, profiler)
 
   return integrate
 
   function checkMemory () {
-    var mem = process.memoryUsage()
-    var heapUsed = mem.heapUsed
-    var rss = mem.rss
+    const mem = process.memoryUsage()
+    const heapUsed = mem.heapUsed
+    const rss = mem.rss
     profiler.heapUsedOverload = (maxHeapUsedBytes > 0 && heapUsed > maxHeapUsedBytes)
     profiler.rssOverload = (maxRssBytes > 0 && rss > maxRssBytes)
     update()
@@ -97,8 +98,6 @@ function protect (framework, opts) {
 
   function stop () {
     if (eventLoopProfiler) eventLoopProfiler.stop()
-    clearInterval(timer)
+    if (timer) clearInterval(timer)
   }
 }
-
-module.exports = protect

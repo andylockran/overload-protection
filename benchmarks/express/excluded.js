@@ -1,6 +1,6 @@
 'use strict'
 
-var app = require('express')()
+const app = require('express')()
 
 app.get('/', function (req, res) {
   res.send('content')

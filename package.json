@@ -1,13 +1,20 @@
 {
+  "type": "module",
   "name": "overload-protection",
-  "version": "1.2.3",
+  "version": "2.0.0",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
   "scripts": {
-    "test": "tap test",
+    "test": "vitest run",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
-    "cov": "tap --cov test",
-    "covr": "tap --coverage-report=html test",
+    "cov": "vitest --coverage",
+    "covr": "vitest --coverage --coverage-report=html",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
@@ -29,23 +36,30 @@
     "express",
     "fastify",
     "http",
-    "koa",
-    "restify"
+    "koa"
   ],
   "author": "David Mark Clements <huperekchuno@googlemail.com>",
   "license": "MIT",
   "devDependencies": {
-    "autocannon": "^4.4.1",
-    "express": "^4.17.1",
-    "koa": "^2.11.0",
-    "koa-router": "^7.4.0",
+    "@koa/router": "^15.0.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "autocannon": "^8.0.0",
+    "express": "^4.22.1",
+    "koa": "^2.16.3",
     "pre-commit": "^1.2.2",
-    "restify": "^8.5.1",
-    "standard": "^10.0.3",
-    "tap": "^10.7.2"
+    "standard": "^17.1.0",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
-    "loopbench": "^1.2.0"
+    "loopbench": "^2.0.0"
+  },
+  "standard": {
+    "globals": [
+      "test",
+      "expect",
+      "it",
+      "describe"
+    ]
   },
   "directories": {
     "lib": "lib",
@@ -59,5 +73,5 @@
     "url": "https://github.com/davidmarkclements/overload-protection/issues"
   },
   "homepage": "https://github.com/davidmarkclements/overload-protection#readme",
-  "description": "Load detection and shedding capabilities for http, express, restify and koa"
+  "description": "Load detection and shedding capabilities for http, express and koa"
 }

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Loop & Overload Protection Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+    
+    #container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #58a6ff;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #8b949e;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    #controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      background: #238636;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 0 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    button:hover {
+      background: #2ea043;
+    }
+    
+    button:disabled {
+      background: #21262d;
+      color: #484f58;
+      cursor: not-allowed;
+    }
+    
+    #visualization {
+      background: #161b22;
+      border-radius: 6px;
+      padding: 20px;
+      border: 1px solid #30363d;
+    }
+    
+    .request {
+      cursor: pointer;
+    }
+    
+    text {
+      pointer-events: none;
+      user-select: none;
+    }
+    
+    .legend {
+      margin-top: 20px;
+      padding: 15px;
+      background: #0d1117;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    
+    .legend-item {
+      display: inline-block;
+      margin-right: 20px;
+      font-size: 13px;
+    }
+    
+    .legend-color {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    
+    .explanation {
+      margin-top: 20px;
+      padding: 15px;
+      background: #0d1117;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      line-height: 1.6;
+    }
+    
+    .explanation h3 {
+      color: #58a6ff;
+      margin-top: 0;
+    }
+    
+    .code {
+      background: #161b22;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #7ee787;
+    }
+    
+    .tooltip {
+      position: absolute;
+      padding: 8px 12px;
+      background: #1c2128;
+      border: 1px solid #58a6ff;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      max-width: 300px;
+      z-index: 1000;
+    }
+    
+    .phase-indicator {
+      text-align: center;
+      padding: 10px;
+      margin-bottom: 20px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      font-size: 14px;
+      min-height: 24px;
+    }
+    
+    .phase-text {
+      color: #58a6ff;
+      font-weight: 600;
+    }
+    
+    .detail-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    
+    .detail-box h4 {
+      color: #f0883e;
+      margin: 0 0 8px 0;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>Event Loop & Overload Protection</h1>
+    <div class="subtitle">Interactive visualization of Node.js event loop monitoring</div>
+    
+    <div id="controls">
+      <button id="startBtn">Start Normal Load</button>
+      <button id="heavyBtn">Simulate Fluctuating Load</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+    
+    <div class="phase-indicator">
+      <span class="phase-text" id="phaseText">Click "Start Normal Load" to begin visualization</span>
+    </div>
+    
+    <div id="visualization"></div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <div class="legend">
+      <div style="font-size: 16px; font-weight: 600; color: #58a6ff; margin-bottom: 10px;">Legend</div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #58a6ff;"></span>
+        Normal Request (200 OK)
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #f85149;"></span>
+        Rejected Request (503)
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #7ee787;"></span>
+        Event Loop Sampling
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #f0883e;"></span>
+        Heavy Task
+      </div>
+    </div>
+    
+    <div class="explanation">
+      <h3>How It Works</h3>
+      <p>
+        <strong>Event Loop Monitoring:</strong> The overload-protection library uses 
+        <span class="code">loopbench</span> to measure the delay between event loop ticks. 
+        When the event loop is busy with CPU-intensive tasks, the delay increases.
+      </p>
+      <p>
+        <strong>Threshold Detection:</strong> When the event loop delay exceeds 
+        <span class="code">maxEventLoopDelay</span> (default 42ms), the middleware 
+        detects overload and starts rejecting requests with 503 (Service Unavailable).
+      </p>
+      <p>
+        <strong>Load Shedding:</strong> By rejecting requests early, the server protects 
+        itself from cascading failures. Rejected requests can retry later (via 
+        <span class="code">Retry-After</span> header), allowing the server to recover.
+      </p>
+      <p>
+        <strong>Memory Monitoring:</strong> The library also monitors heap usage and RSS memory, 
+        providing comprehensive protection against resource exhaustion.
+      </p>
+      
+      <div class="detail-box">
+        <h4>🎯 What to Watch For</h4>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+          <li><strong>Event Loop Speed:</strong> The rotating indicator spins quickly under normal load, slows down dramatically when overloaded</li>
+          <li><strong>Request Colors:</strong> Blue circles = accepted (200 OK), Red circles = rejected (503)</li>
+          <li><strong>Green Pulses:</strong> Show the sampling interval (every 5ms by default)</li>
+          <li><strong>Delay Threshold:</strong> Watch the delay fluctuate above and below 42ms threshold when you click "Simulate Fluctuating Load"</li>
+          <li><strong>Recovery Cycles:</strong> Observe how the system automatically recovers when delay drops below threshold</li>
+        </ul>
+      </div>
+      
+      <div class="detail-box">
+        <h4>📊 Configuration Options</h4>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+          <li><span class="code">maxEventLoopDelay</span>: 42ms (default) - threshold for event loop lag detection</li>
+          <li><span class="code">maxHeapUsedBytes</span>: 0 (disabled) - can monitor heap memory usage</li>
+          <li><span class="code">maxRssBytes</span>: 0 (disabled) - can monitor RSS memory usage</li>
+          <li><span class="code">sampleInterval</span>: 5ms - how often to check event loop delay</li>
+          <li><span class="code">clientRetrySecs</span>: 1s - tells clients when to retry via Retry-After header</li>
+        </ul>
+      </div>
+      
+      <div class="detail-box">
+        <h4>🔄 Request Lifecycle</h4>
+        <ol style="margin: 5px 0; padding-left: 20px;">
+          <li><strong>Arrival:</strong> Request appears in "Incoming Requests" section</li>
+          <li><strong>Overload Check:</strong> Middleware checks if <span class="code">profiler.overload === true</span></li>
+          <li><strong>Decision:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              <li>If overloaded: Immediate 503 response, request moves directly to responses (red)</li>
+              <li>If not overloaded: Request enters event loop for processing (blue)</li>
+            </ul>
+          </li>
+          <li><strong>Processing:</strong> Request is processed in the event loop (adds to delay if heavy)</li>
+          <li><strong>Response:</strong> Completed request moves to "Responses" section</li>
+          <li><strong>Cleanup:</strong> Response fades out after 1 second</li>
+        </ol>
+      </div>
+      
+      <div class="detail-box">
+        <h4>⚡ Why This Matters</h4>
+        <p style="margin: 5px 0;">
+          Without overload protection, a surge of requests would queue up, causing ALL requests to 
+          experience extreme delays. The event loop would become blocked, making the entire server 
+          unresponsive. By rejecting excess requests early (fail-fast), the server maintains 
+          responsiveness for requests it CAN handle, preventing cascading failures.
+        </p>
+        <p style="margin: 5px 0;">
+          This is especially critical for microservices where one overloaded service can bring down 
+          an entire system through retry storms and resource exhaustion.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const config = {
+      width: 1360,
+      height: 600,
+      maxEventLoopDelay: 42,
+      normalRequestInterval: 500,
+      heavyRequestInterval: 100,
+      sampleInterval: 5
+    };
+
+    // State
+    let state = {
+      running: false,
+      heavyLoad: false,
+      requestCount: 0,
+      rejectedCount: 0,
+      acceptedCount: 0,
+      eventLoopDelay: 0,
+      overload: false,
+      tasks: [],
+      requests: [],
+      samples: [],
+      lastSampleTime: Date.now()
+    };
+
+    let timers = {
+      request: null,
+      sample: null
+    };
+
+    // Setup SVG
+    const svg = d3.select('#visualization')
+      .append('svg')
+      .attr('width', config.width)
+      .attr('height', config.height);
+
+    // Define sections
+    const sections = {
+      incoming: { x: 50, y: 50, width: 200, height: 500, title: 'Incoming Requests' },
+      eventLoop: { x: 300, y: 50, width: 400, height: 500, title: 'Event Loop' },
+      monitoring: { x: 750, y: 50, width: 300, height: 240, title: 'Monitoring' },
+      responses: { x: 750, y: 310, width: 300, height: 240, title: 'Responses' },
+      queue: { x: 1100, y: 50, width: 200, height: 500, title: 'Task Queue' }
+    };
+
+    // Draw sections
+    Object.entries(sections).forEach(([key, section]) => {
+      const group = svg.append('g').attr('class', `section-${key}`);
+      
+      group.append('rect')
+        .attr('x', section.x)
+        .attr('y', section.y)
+        .attr('width', section.width)
+        .attr('height', section.height)
+        .attr('fill', '#0d1117')
+        .attr('stroke', '#30363d')
+        .attr('stroke-width', 2)
+        .attr('rx', 6);
+      
+      group.append('text')
+        .attr('x', section.x + section.width / 2)
+        .attr('y', section.y + 25)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#58a6ff')
+        .attr('font-size', '14px')
+        .attr('font-weight', 'bold')
+        .text(section.title);
+    });
+
+    // Monitoring display
+    const monitoringGroup = svg.append('g').attr('class', 'monitoring-display');
+    
+    const metrics = [
+      { key: 'delay', label: 'Event Loop Delay:', y: 100, format: v => `${v.toFixed(1)}ms` },
+      { key: 'threshold', label: 'Threshold:', y: 130, format: v => `${v}ms` },
+      { key: 'overload', label: 'Overload:', y: 160, format: v => v ? 'YES' : 'no' },
+      { key: 'accepted', label: 'Accepted:', y: 200, format: v => v },
+      { key: 'rejected', label: 'Rejected:', y: 230, format: v => v }
+    ];
+
+    metrics.forEach(metric => {
+      monitoringGroup.append('text')
+        .attr('x', 760)
+        .attr('y', metric.y)
+        .attr('fill', '#8b949e')
+        .attr('font-size', '13px')
+        .text(metric.label);
+      
+      monitoringGroup.append('text')
+        .attr('class', `metric-${metric.key}`)
+        .attr('x', 900)
+        .attr('y', metric.y)
+        .attr('fill', '#7ee787')
+        .attr('font-size', '13px')
+        .attr('font-weight', 'bold')
+        .text(metric.format(metric.key === 'threshold' ? config.maxEventLoopDelay : 0));
+    });
+
+    // Event loop visualization (circular)
+    const loopCenter = { x: 500, y: 300 };
+    const loopRadius = 120;
+    
+    svg.append('circle')
+      .attr('class', 'event-loop-circle')
+      .attr('cx', loopCenter.x)
+      .attr('cy', loopCenter.y)
+      .attr('r', loopRadius)
+      .attr('fill', 'none')
+      .attr('stroke', '#30363d')
+      .attr('stroke-width', 3)
+      .on('mouseover', function(event) {
+        showTooltip(event, 'The Node.js Event Loop processes all async operations. When it\'s blocked by CPU-intensive work, the rotating indicator slows down.');
+      })
+      .on('mouseout', hideTooltip);
+    
+    svg.append('text')
+      .attr('x', loopCenter.x)
+      .attr('y', loopCenter.y - 5)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#58a6ff')
+      .attr('font-size', '16px')
+      .attr('font-weight', 'bold')
+      .text('Event Loop');
+    
+    svg.append('text')
+      .attr('class', 'loop-speed-text')
+      .attr('x', loopCenter.x)
+      .attr('y', loopCenter.y + 15)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#8b949e')
+      .attr('font-size', '11px')
+      .text('Normal Speed');
+
+    // Rotating indicator for event loop
+    const loopIndicator = svg.append('line')
+      .attr('class', 'loop-indicator')
+      .attr('x1', loopCenter.x)
+      .attr('y1', loopCenter.y)
+      .attr('x2', loopCenter.x)
+      .attr('y2', loopCenter.y - loopRadius)
+      .attr('stroke', '#7ee787')
+      .attr('stroke-width', 3);
+    
+    // Add section explanations
+    const explanations = [
+      { section: 'incoming', text: 'Requests arrive here', y: sections.incoming.y + sections.incoming.height + 20 },
+      { section: 'eventLoop', text: 'Processing happens here - watch rotation speed!', y: sections.eventLoop.y + sections.eventLoop.height + 20 },
+      { section: 'monitoring', text: 'Samples every 5ms', y: sections.monitoring.y - 15 },
+      { section: 'queue', text: 'Tasks waiting to execute', y: sections.queue.y + sections.queue.height + 20 }
+    ];
+    
+    explanations.forEach(exp => {
+      const section = sections[exp.section];
+      svg.append('text')
+        .attr('x', section.x + section.width / 2)
+        .attr('y', exp.y)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#6e7681')
+        .attr('font-size', '11px')
+        .attr('font-style', 'italic')
+        .text(exp.text);
+    });
+    
+    // Add arrows showing flow
+    const arrow = d3.symbol().type(d3.symbolTriangle).size(50);
+    
+    // Incoming -> Event Loop
+    svg.append('path')
+      .attr('d', arrow)
+      .attr('transform', `translate(${sections.incoming.x + sections.incoming.width + 20}, ${sections.incoming.y + 100}) rotate(90)`)
+      .attr('fill', '#58a6ff')
+      .attr('opacity', 0.5);
+    
+    // Event Loop -> Responses
+    svg.append('path')
+      .attr('d', arrow)
+      .attr('transform', `translate(${sections.eventLoop.x + sections.eventLoop.width + 20}, ${sections.responses.y + 100}) rotate(90)`)
+      .attr('fill', '#58a6ff')
+      .attr('opacity', 0.5);
+
+    // Animation loop
+    let animationFrame;
+    let loopAngle = 0;
+
+    function animate() {
+      if (!state.running) return;
+      
+      // Rotate event loop indicator
+      const speed = state.overload ? 0.5 : 2; // Slow down when overloaded
+      loopAngle += speed;
+      const radians = (loopAngle * Math.PI) / 180;
+      const x2 = loopCenter.x + Math.sin(radians) * loopRadius;
+      const y2 = loopCenter.y - Math.cos(radians) * loopRadius;
+      
+      loopIndicator
+        .attr('x2', x2)
+        .attr('y2', y2);
+      
+      // Update event loop circle color and speed text based on state
+      svg.select('.event-loop-circle')
+        .attr('stroke', state.overload ? '#f85149' : '#30363d');
+      
+      svg.select('.loop-speed-text')
+        .text(state.overload ? '⚠️ Blocked!' : 'Normal Speed')
+        .attr('fill', state.overload ? '#f85149' : '#8b949e');
+      
+      animationFrame = requestAnimationFrame(animate);
+    }
+    
+    // Tooltip functions
+    function showTooltip(event, text) {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.innerHTML = text;
+      tooltip.style.opacity = '1';
+      tooltip.style.left = (event.pageX + 10) + 'px';
+      tooltip.style.top = (event.pageY + 10) + 'px';
+    }
+    
+    function hideTooltip() {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.style.opacity = '0';
+    }
+    
+    // Update phase indicator
+    function updatePhase(text) {
+      document.getElementById('phaseText').textContent = text;
+    }
+
+    // Generate request
+    function generateRequest() {
+      if (!state.running) return;
+      
+      const request = {
+        id: ++state.requestCount,
+        x: sections.incoming.x + 100,
+        y: sections.incoming.y + 50,
+        status: 'pending'
+      };
+      
+      state.requests.push(request);
+      
+      // Draw request
+      const requestGroup = svg.append('g')
+        .attr('class', `request-${request.id}`)
+        .attr('transform', `translate(${request.x}, ${request.y})`);
+      
+      requestGroup.append('circle')
+        .attr('class', 'request-circle')
+        .attr('r', 8)
+        .attr('fill', '#58a6ff')
+        .attr('opacity', 0)
+        .transition()
+        .duration(200)
+        .attr('opacity', 1);
+      
+      requestGroup.append('text')
+        .attr('y', 4)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#0d1117')
+        .attr('font-size', '10px')
+        .attr('font-weight', 'bold')
+        .text('R');
+      
+      // Add tooltip to request
+      requestGroup
+        .on('mouseover', function(event) {
+          showTooltip(event, `Request #${request.id} - Status: ${request.status}`);
+        })
+        .on('mouseout', hideTooltip);
+      
+      // Check overload
+      if (state.overload) {
+        // Reject request
+        request.status = 'rejected';
+        state.rejectedCount++;
+        updatePhase(`⚠️ OVERLOAD! Request #${request.id} rejected with 503 (event loop delay: ${state.eventLoopDelay.toFixed(1)}ms > 42ms)`);
+        
+        requestGroup.transition()
+          .duration(800)
+          .attr('transform', `translate(${sections.responses.x + 150}, ${sections.responses.y + 100})`)
+          .on('end', () => {
+            requestGroup.select('.request-circle')
+              .attr('fill', '#f85149');
+            
+            setTimeout(() => {
+              requestGroup.transition()
+                .duration(500)
+                .attr('opacity', 0)
+                .remove();
+            }, 1000);
+          });
+      } else {
+        // Accept request - process in event loop
+        request.status = 'accepted';
+        state.acceptedCount++;
+        updatePhase(`✓ Request #${request.id} accepted - processing in event loop (delay: ${state.eventLoopDelay.toFixed(1)}ms)`);
+        
+        // Move to event loop
+        requestGroup.transition()
+          .duration(600)
+          .attr('transform', `translate(${loopCenter.x}, ${loopCenter.y})`)
+          .on('end', () => {
+            // Simulate processing
+            const processingTime = state.heavyLoad ? 100 : 50;
+            
+            if (state.heavyLoad) {
+              // Heavy tasks still add to delay, but fluctuation is handled in sampling
+              const delayIncrease = Math.random() * 15 + 5;
+              state.eventLoopDelay += delayIncrease;
+              updatePhase(`⚙️ Processing heavy task for request #${request.id} - delay increased by ${delayIncrease.toFixed(1)}ms`);
+            }
+            
+            setTimeout(() => {
+              updatePhase(`→ Request #${request.id} completed - sending 200 OK response`);
+              // Move to response
+              requestGroup.transition()
+                .duration(600)
+                .attr('transform', `translate(${sections.responses.x + 150}, ${sections.responses.y + 100})`)
+                .on('end', () => {
+                  setTimeout(() => {
+                    requestGroup.transition()
+                      .duration(500)
+                      .attr('opacity', 0)
+                      .remove();
+                  }, 1000);
+                });
+            }, processingTime);
+          });
+      }
+      
+      updateMetrics();
+    }
+
+    // Sample event loop
+    function sampleEventLoop() {
+      if (!state.running) return;
+      
+      const now = Date.now();
+      const actualDelay = now - state.lastSampleTime;
+      state.lastSampleTime = now;
+      
+      // Natural decay
+      state.eventLoopDelay *= 0.95;
+      
+      // Add variance based on processing
+      if (state.heavyLoad) {
+        // Fluctuating load - sine wave pattern that goes above and below threshold
+        const time = Date.now() / 1000; // Convert to seconds
+        const sineWave = Math.sin(time * 0.5) * 30; // Oscillates between -30 and +30
+        const baseLoad = 35; // Base value around the threshold
+        const targetDelay = baseLoad + sineWave; // Fluctuates between ~5ms and ~65ms
+        
+        // Smoothly transition to target delay
+        const diff = targetDelay - state.eventLoopDelay;
+        state.eventLoopDelay += diff * 0.3; // Smooth transition
+        
+        // Add some random noise
+        state.eventLoopDelay += (Math.random() - 0.5) * 5;
+      }
+      
+      // Check threshold
+      const wasOverload = state.overload;
+      state.overload = state.eventLoopDelay > config.maxEventLoopDelay;
+      
+      // Update phase on state change
+      if (!wasOverload && state.overload) {
+        updatePhase(`🚨 OVERLOAD DETECTED! Event loop delay (${state.eventLoopDelay.toFixed(1)}ms) exceeded threshold (42ms) - starting to reject requests`);
+      } else if (wasOverload && !state.overload) {
+        updatePhase(`✓ Recovered! Event loop delay (${state.eventLoopDelay.toFixed(1)}ms) back below threshold - accepting requests again`);
+      }
+      
+      // Visual sample indicator
+      const sample = svg.append('circle')
+        .attr('cx', sections.monitoring.x + 150)
+        .attr('cy', sections.monitoring.y + 150)
+        .attr('r', 5)
+        .attr('fill', '#7ee787')
+        .attr('opacity', 1);
+      
+      sample.transition()
+        .duration(1000)
+        .attr('r', 20)
+        .attr('opacity', 0)
+        .remove();
+      
+      updateMetrics();
+    }
+
+    // Update metrics display
+    function updateMetrics() {
+      monitoringGroup.select('.metric-delay')
+        .text(state.eventLoopDelay.toFixed(1) + 'ms')
+        .attr('fill', state.overload ? '#f85149' : '#7ee787');
+      
+      monitoringGroup.select('.metric-overload')
+        .text(state.overload ? 'YES' : 'no')
+        .attr('fill', state.overload ? '#f85149' : '#7ee787');
+      
+      monitoringGroup.select('.metric-accepted')
+        .text(state.acceptedCount);
+      
+      monitoringGroup.select('.metric-rejected')
+        .text(state.rejectedCount);
+    }
+
+    // Controls
+    document.getElementById('startBtn').addEventListener('click', () => {
+      if (state.running) return;
+      
+      state.running = true;
+      state.heavyLoad = false;
+      state.lastSampleTime = Date.now();
+      
+      updatePhase('🟢 Normal load started - sending requests every 500ms');
+      
+      timers.request = setInterval(generateRequest, config.normalRequestInterval);
+      timers.sample = setInterval(sampleEventLoop, config.sampleInterval);
+      
+      animate();
+      
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('heavyBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = false;
+    });
+
+    document.getElementById('heavyBtn').addEventListener('click', () => {
+      if (!state.running) return;
+      
+      state.heavyLoad = true;
+      clearInterval(timers.request);
+      timers.request = setInterval(generateRequest, config.heavyRequestInterval);
+      
+      updatePhase('🔴 FLUCTUATING LOAD activated - traffic oscillating above and below threshold (watch for recovery cycles)');
+      
+      document.getElementById('heavyBtn').disabled = true;
+    });
+
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      state.running = false;
+      state.heavyLoad = false;
+      
+      clearInterval(timers.request);
+      clearInterval(timers.sample);
+      cancelAnimationFrame(animationFrame);
+      
+      updatePhase(`⏸️ Stopped - Accepted: ${state.acceptedCount}, Rejected: ${state.rejectedCount}`);
+      
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('heavyBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = true;
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      // Stop if running
+      state.running = false;
+      state.heavyLoad = false;
+      clearInterval(timers.request);
+      clearInterval(timers.sample);
+      cancelAnimationFrame(animationFrame);
+      
+      // Reset state
+      state = {
+        running: false,
+        heavyLoad: false,
+        requestCount: 0,
+        rejectedCount: 0,
+        acceptedCount: 0,
+        eventLoopDelay: 0,
+        overload: false,
+        tasks: [],
+        requests: [],
+        samples: [],
+        lastSampleTime: Date.now()
+      };
+      
+      // Clear all request visuals
+      svg.selectAll('[class^="request-"]').remove();
+      
+      // Reset loop indicator
+      loopAngle = 0;
+      loopIndicator
+        .attr('x2', loopCenter.x)
+        .attr('y2', loopCenter.y - loopRadius);
+      
+      svg.select('.event-loop-circle')
+        .attr('stroke', '#30363d');
+      
+      svg.select('.loop-speed-text')
+        .text('Normal Speed')
+        .attr('fill', '#8b949e');
+      
+      updateMetrics();
+      updatePhase('Click "Start Normal Load" to begin visualization');
+      
+      // Reset buttons
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('heavyBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = true;
+    });
+
+    // Initial metrics display
+    updateMetrics();
+  </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 'use strict'
 
-var app = require('express')()
-var protect = require('../..')('express')
+const app = require('express')()
+const protect = require('../..')('express')
 
 app.use(protect)
 
@@ -10,7 +10,7 @@ app.get('/', function (req, res) {
 })
 
 app.listen(3000, function () {
-  var req = require('http').get('http://localhost:3000')
+  const req = require('http').get('http://localhost:3000')
 
   req.on('response', function (res) {
     console.log('got status code', res.statusCode)
@@ -18,7 +18,7 @@ app.listen(3000, function () {
 
     setTimeout(function () {
       console.log('protect.overload after load', protect.overload)
-      var req = require('http').get('http://localhost:3000')
+      const req = require('http').get('http://localhost:3000')
 
       req.on('response', function (res) {
         console.log('got status code', res.statusCode)
@@ -37,6 +37,6 @@ app.listen(3000, function () {
 })
 
 function sleep (msec) {
-  var start = Date.now()
-  while (Date.now() - start < msec) {}
+  const start = Date.now()
+  while (Date.now() - start < msec) { /* busy wait */ }
 }

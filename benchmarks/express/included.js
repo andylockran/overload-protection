@@ -1,7 +1,7 @@
 'use strict'
 
-var app = require('express')()
-var protect = require('../..')('express')
+const app = require('express')()
+const protect = require('../..')('express')
 
 app.use(protect)
 
