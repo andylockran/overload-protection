@@ -47,11 +47,6 @@ import protection from '../../../index.js'
   }
 }
 
-function sleep (msec) {
-  const start = Date.now()
-  while (Date.now() - start < msec) {}
-}
-
 test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function (t) {
   // Use mocked memory instead of event loop monitoring (more reliable in integration tests)
   const memoryUsage = process.memoryUsage
@@ -550,7 +545,7 @@ test('if logging option is a string, when overloaded, writes log message using r
     next()
   })
   app.use(protect)
-  var server = http.createServer(app)
+  const server = http.createServer(app)
 
   server.listen(0, function () {
     const port = server.address().port
@@ -570,7 +565,7 @@ test('if logging option is a function, when overloaded calls the function with h
       external: 99
     }
   }
-  var protect = protection('express', {
+  const protect = protection('express', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
@@ -585,7 +580,7 @@ test('if logging option is a function, when overloaded calls the function with h
 
   const app = express()
   app.use(protect)
-  var server = http.createServer(app)
+  const server = http.createServer(app)
 
   server.listen(0, function () {
     const port = server.address().port
@@ -626,7 +621,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
   app.use(function (req, res) {
     res.end('content')
   })
-  var server = http.createServer(app)
+  const server = http.createServer(app)
 
   server.listen(0, function () {
     const port = server.address().port
@@ -637,7 +632,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
 })
 
 test('if logStatsOnReq is true and logging option is a function, calls the function with stats on every request', function (t) {
-  var protect = protection('express', {
+  const protect = protection('express', {
     logStatsOnReq: true,
     logging: function (msg) {
       t.same(Object.keys(msg), [
@@ -661,7 +656,7 @@ test('if logStatsOnReq is true and logging option is a function, calls the funct
   app.use(function (req, res) {
     res.end('content')
   })
-  var server = http.createServer(app)
+  const server = http.createServer(app)
 
   server.listen(0, function () {
     setTimeout(function () {

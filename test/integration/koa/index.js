@@ -61,7 +61,7 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function 
 
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     const req = http.get('http://localhost:' + port)
     block(50000)
@@ -93,7 +93,7 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -127,7 +127,7 @@ test('sends 503 when rss threshold is passed, as per maxRssBytes', function (t) 
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -162,7 +162,7 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -198,7 +198,7 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -238,7 +238,7 @@ test('errorPropagationMode:false (default)', function (t) {
     return next()
   })
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -282,7 +282,7 @@ test('errorPropagationMode:true', function (t) {
 
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -318,7 +318,7 @@ test('in default mode, production:false leads to high detail client response mes
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -358,7 +358,7 @@ test('in default mode, production:true leads to standard 503 client response mes
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -407,7 +407,7 @@ test('in errorPropagationMode production:false sets expose:true on error object'
 
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -451,7 +451,7 @@ test('in errorPropagationMode production:true sets expose:false on error object'
   })
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -492,7 +492,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
 
   app.use(router.routes())
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       const req = http.get('http://localhost:' + port)
@@ -552,7 +552,7 @@ test('if logging option is a string, when overloaded, writes log message using r
   })
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
@@ -570,7 +570,7 @@ test('if logging option is a function, when overloaded calls the function with h
       external: 99
     }
   }
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
@@ -586,7 +586,7 @@ test('if logging option is a function, when overloaded calls the function with h
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
@@ -623,7 +623,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
   })
   app.use(protect)
 
-  var server = app.listen(0, function () {
+  const server = app.listen(0, function () {
     const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
@@ -632,7 +632,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
 })
 
 test('if logStatsOnReq is true and logging option is a function, calls the function with stats on every request', function (t) {
-  var protect = protection('koa', {
+  const protect = protection('koa', {
     logStatsOnReq: true,
     logging: function (msg) {
       t.same(Object.keys(msg), [
@@ -654,7 +654,7 @@ test('if logStatsOnReq is true and logging option is a function, calls the funct
   const app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3001, function () {
+  const server = app.listen(3001, function () {
     setTimeout(function () {
       http.get('http://localhost:3001').end()
     }, 6)

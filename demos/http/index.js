@@ -6,7 +6,7 @@ const protect = require('../..')('http')
 
 function sleep (msec) {
   const start = Date.now()
-  while (Date.now() - start < msec) {}
+  while (Date.now() - start < msec) { /* busy wait */ }
 }
 
 function serve (req, res) {

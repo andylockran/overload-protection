@@ -580,7 +580,7 @@ test('if logging option is a string, when overloaded, writes log message using r
     logging: 'warn'
   })
 
-  var server = http.createServer(function serve (req, res) {
+  const server = http.createServer(function serve (req, res) {
     req = {
       log: {
         warn: function (msg) {
@@ -614,7 +614,7 @@ test('if logging option is a function, when overloaded calls the function with h
       external: 99
     }
   }
-  var protect = protection('http', {
+  const protect = protection('http', {
     sampleInterval: 5,
     maxEventLoopDelay: 0,
     maxRssBytes: 40,
@@ -627,7 +627,7 @@ test('if logging option is a function, when overloaded calls the function with h
     }
   })
 
-  var server = http.createServer(function serve (req, res) {
+  const server = http.createServer(function serve (req, res) {
     if (protect(req, res) === true) return
     res.end('content')
   })
@@ -646,7 +646,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
     logStatsOnReq: true
   })
   t.plan(1)
-  var server = http.createServer(function serve (req, res) {
+  const server = http.createServer(function serve (req, res) {
     req = {
       log: {
         info: function (msg) {
@@ -679,7 +679,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
 })
 
 test('if logStatsOnReq is true and logging option is a function, calls the function with stats on every request', function (t) {
-  var protect = protection('http', {
+  const protect = protection('http', {
     logStatsOnReq: true,
     logging: function (msg) {
       t.same(Object.keys(msg), [
@@ -698,7 +698,7 @@ test('if logStatsOnReq is true and logging option is a function, calls the funct
     }
   })
 
-  var server = http.createServer(function serve (req, res) {
+  const server = http.createServer(function serve (req, res) {
     if (protect(req, res) === true) return
     res.end('content')
   })

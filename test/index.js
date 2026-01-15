@@ -162,7 +162,7 @@ test('instance.eventLoopOverload is false when returning under maxEventLoopDelay
     const delay = 50
     const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 10 })
     const start = Date.now()
-    while (Date.now() - start < delay) {}
+    while (Date.now() - start < delay) { /* busy wait */ }
     setImmediate(function () {
       setTimeout(function () {
         expect(instance.eventLoopOverload).toBe(false)
@@ -178,7 +178,7 @@ test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (ma
     const delay = 50
     const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 0, maxHeapUsedBytes: 10 })
     const start = Date.now()
-    while (Date.now() - start < delay) {}
+    while (Date.now() - start < delay) { /* busy wait */ }
     setImmediate(function () {
       expect(instance.eventLoopOverload).toBe(false)
       instance.stop()
@@ -192,7 +192,7 @@ test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (ma
     const delay = 50
     const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 0, maxRssBytes: 10 })
     const start = Date.now()
-    while (Date.now() - start < delay) {}
+    while (Date.now() - start < delay) { /* busy wait */ }
     setImmediate(function () {
       expect(instance.eventLoopOverload).toBe(false)
       instance.stop()
@@ -206,7 +206,7 @@ test('instance.overload is true if instance.eventLoopOverload is true', () => {
     const delay = 50
     const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 1 })
     const start = Date.now()
-    while (Date.now() - start < delay) {}
+    while (Date.now() - start < delay) { /* busy wait */ }
     setImmediate(function () {
       expect(instance.eventLoopOverload).toBe(true)
       expect(instance.overload).toBe(instance.eventLoopOverload)

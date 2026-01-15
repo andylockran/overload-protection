@@ -6,7 +6,7 @@ let excluded = require('./excluded')
 
 console.log('koa with overload protection:')
 included = included.listen(3000)
-var instance = autocannon({
+let instance = autocannon({
   url: 'http://localhost:3000',
   connections: 10,
   pipelining: 1,
