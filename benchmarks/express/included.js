@@ -1,12 +1,12 @@
-'use strict'
+import express from 'express'
+import protect from '../../index.js'
 
-const app = require('express')()
-const protect = require('../..')('express')
+const app = express()
 
-app.use(protect)
+app.use(protect('express'))
 
 app.get('/', function (req, res) {
   res.send('content')
 })
 
-module.exports = app
+export default app

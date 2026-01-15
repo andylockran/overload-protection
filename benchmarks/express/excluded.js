@@ -1,9 +1,9 @@
-'use strict'
+import express from 'express'
 
-const app = require('express')()
+const app = express()
 
 app.get('/', function (req, res) {
   res.send('content')
 })
 
-module.exports = app
+export default app

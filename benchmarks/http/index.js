@@ -1,8 +1,6 @@
-'use strict'
-const autocannon = require('autocannon')
-
-const included = require('./included')
-const excluded = require('./excluded')
+import autocannon from 'autocannon'
+import included from './included.js'
+import excluded from './excluded.js'
 
 console.log('http with overload protection:')
 included.listen(3000)

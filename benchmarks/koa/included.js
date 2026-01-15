@@ -1,13 +1,12 @@
-'use strict'
+import Koa from 'koa'
+import Router from '@koa/router'
+import protect from '../../index.js'
 
-const Koa = require('koa')
-const Router = require('@koa/router')
-const protect = require('../..')('koa')
-
+const protectMiddleware = protect('koa')
 const router = new Router()
 const app = new Koa()
 
-app.use(protect)
+app.use(protectMiddleware)
 
 router.get('/', async function (ctx) {
   ctx.body = 'content'
@@ -15,4 +14,4 @@ router.get('/', async function (ctx) {
 
 app.use(router.routes())
 
-module.exports = app
+export default app

@@ -1,7 +1,5 @@
-'use strict'
-
-const Koa = require('koa')
-const Router = require('@koa/router')
+import Koa from 'koa'
+import Router from '@koa/router'
 
 const router = new Router()
 const app = new Koa()
@@ -12,4 +10,4 @@ router.get('/', async function (ctx) {
 
 app.use(router.routes())
 
-module.exports = app
+export default app

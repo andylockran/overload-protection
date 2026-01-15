@@ -1,10 +1,9 @@
-'use strict'
+import http from 'http'
 
-const http = require('http')
 const server = http.createServer(serve)
 
 function serve (req, res) {
   res.end('content')
 }
 
-module.exports = server
+export default server

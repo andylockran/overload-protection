@@ -1,12 +1,12 @@
-'use strict'
+import http from 'http'
+import protect from '../../index.js'
 
-const http = require('http')
+const protectMiddleware = protect('http')
 const server = http.createServer(serve)
-const protect = require('../..')('http')
 
 function serve (req, res) {
-  if (protect(req, res) === true) return
+  if (protectMiddleware(req, res) === true) return
   res.end('content')
 }
 
-module.exports = server
+export default server
