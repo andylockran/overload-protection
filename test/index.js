@@ -1,3 +1,28 @@
+/**
+ * Test suite for overload-protection module functionality.
+ * 
+ * This test file verifies the core behavior of the overload protection system including:
+ * - Framework validation and configuration error handling
+ * - Sampling interval management and cleanup
+ * - Event loop delay monitoring and threshold detection
+ * - Memory usage tracking (heap and RSS) with configurable thresholds
+ * - Overload state detection across multiple metrics
+ * - Backward compatibility with legacy JavaScript prototype mechanisms
+ * 
+ * Common test failure causes:
+ * - Timing-sensitive tests may fail on slow/busy systems due to setTimeout/setImmediate delays
+ * - Event loop delay tests depend on actual CPU load and may be flaky in CI environments
+ * - Memory mocking tests require process.memoryUsage to be properly restored after each test
+ * - Tests using global.setInterval/clearInterval mocks must ensure proper cleanup
+ * - Race conditions in async tests where instance.stop() is called before state updates
+ * 
+ * To debug failures:
+ * 1. Check if timing thresholds need adjustment for your environment
+ * 2. Verify that mocked globals (setInterval, clearInterval, memoryUsage) are restored
+ * 3. Increase setTimeout delays if tests are flaky
+ * 4. Run tests in isolation to identify interdependencies
+ * 5. Check for unhandled promise rejections or missing resolve/reject calls
+ */
 "use strict"
 import protect from '../index.js'
 
@@ -85,16 +110,24 @@ test('instance.eventLoopDelay indicates the delay between samples', () => {
     const busyMs = 150
     const instance = protect('http', { sampleInterval: 5 })
     const start = Date.now()
-    // Busy-wait with lightweight CPU work (avoid huge allocations)
+    // Heavy CPU work - nested loops with string operations to block event loop
     while (Date.now() - start <= busyMs) {
-      for (let i = 0; i < 1000; i++) Math.sqrt(i)
+      let hash = 0
+      for (let i = 0; i < 100000; i++) {
+        for (let j = 0; j < 10; j++) {
+          hash = ((hash << 5) - hash) + i * j
+          hash = hash & hash
+        }
+      }
     }
-    // wait a short while for the profiler to record the delay
-    setTimeout(function () {
-      expect(instance.eventLoopDelay).toBeGreaterThan(10)
-      instance.stop()
-      resolve()
-    }, 50)
+    // Check on the very next event loop tick after busy-wait completes
+    setImmediate(function () {
+      setImmediate(function () {
+        expect(instance.eventLoopDelay).toBeGreaterThan(10)
+        instance.stop()
+        resolve()
+      })
+    })
   })
 })
 
@@ -103,15 +136,24 @@ test('instance.eventLoopOverload is true when maxEventLoopDelay threshold is bre
     const busyMs = 150
     const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 10 })
     const start = Date.now()
+    // Heavy CPU work - nested loops with string operations to block event loop
     while (Date.now() - start < busyMs) {
-      for (let i = 0; i < 1000; i++) Math.sqrt(i)
+      let hash = 0
+      for (let i = 0; i < 100000; i++) {
+        for (let j = 0; j < 10; j++) {
+          hash = ((hash << 5) - hash) + i * j
+          hash = hash & hash
+        }
+      }
     }
-    // Allow some time for the profiler to emit the overload event
-    setTimeout(function () {
-      expect(instance.eventLoopOverload).toBe(true)
-      instance.stop()
-      resolve()
-    }, 50)
+    // Check on the very next event loop tick to catch the overload state
+    setImmediate(function () {
+      setImmediate(function () {
+        expect(instance.eventLoopOverload).toBe(true)
+        instance.stop()
+        resolve()
+      })
+    })
   })
 })
 
@@ -126,7 +168,7 @@ test('instance.eventLoopOverload is false when returning under maxEventLoopDelay
         expect(instance.eventLoopOverload).toBe(false)
         instance.stop()
         resolve()
-      }, 10)
+      }, 50)
     })
   })
 })

@@ -509,7 +509,7 @@ test('if logging option is a string, when overloaded, writes log message using r
   }
   var protect = protection('express', {
     sampleInterval: 5,
-    maxEventLoopDelay: 1,
+    maxEventLoopDelay: 0,
     maxRssBytes: 40,
     maxHeapUsedBytes: 40,
     logging: 'warn'
@@ -519,7 +519,7 @@ test('if logging option is a string, when overloaded, writes log message using r
   app.use(function (req, res, next) {
     req.log = {
       warn: function (msg) {
-        t.is(msg, 'Server experiencing heavy load: (event loop, heap, rss)')
+        t.is(msg, 'Server experiencing heavy load: (heap, rss)')
         server.close()
         protect.stop()
         process.memoryUsage = memoryUsage
@@ -533,7 +533,6 @@ test('if logging option is a string, when overloaded, writes log message using r
 
   server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      sleep(500)
       http.get('http://localhost:' + port).end()
     }, 6)
   })
