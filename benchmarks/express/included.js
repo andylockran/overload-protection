@@ -3,7 +3,13 @@ import protect from '../../index.js'
 
 const app = express()
 
-app.use(protect('express'))
+const protectMiddleware = protect('express', {
+  maxEventLoopDelay: 42,
+  sampleInterval: 5,
+  logging: false
+})
+
+app.use(protectMiddleware)
 
 function cpuWork (ms) {
   const start = Date.now()
@@ -21,6 +27,19 @@ function cpuWork (ms) {
 app.get('/', function (req, res) {
   cpuWork(5)
   res.send('content')
+})
+
+// Expose protection state for monitoring
+app.overload = protectMiddleware.overload
+app.eventLoopDelay = protectMiddleware.eventLoopDelay
+app.maxEventLoopDelay = protectMiddleware.maxEventLoopDelay
+
+// Make state accessible in real-time
+Object.defineProperty(app, 'overload', {
+  get: () => protectMiddleware.overload
+})
+Object.defineProperty(app, 'eventLoopDelay', {
+  get: () => protectMiddleware.eventLoopDelay
 })
 
 export default app

@@ -15,7 +15,9 @@
     "ci": "npm run lint && npm run cov",
     "cov": "vitest --coverage",
     "covr": "vitest --coverage --coverage-report=html",
-    "benchmarks": "for dir in benchmarks/*/; do node \"${dir}index.js\"; done"
+    "benchmarks": "for dir in benchmarks/*/; do node \"${dir}index.js\"; done",
+    "benchmark:demo": "node benchmarks/express/demo.js",
+    "benchmark:compare": "node benchmarks/express/compare.js"
   },
   "pre-commit": [
     "test",
