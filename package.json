@@ -46,6 +46,14 @@
   "dependencies": {
     "loopbench": "^1.2.0"
   },
+  "standard": {
+    "globals": [
+      "test",
+      "expect",
+      "it",
+      "describe"
+    ]
+  },
   "directories": {
     "lib": "lib",
     "test": "test"

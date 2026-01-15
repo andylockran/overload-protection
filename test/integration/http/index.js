@@ -46,11 +46,6 @@ import protection from '../../../index.js'
   }
 }
 
-function sleep (msec) {
-  var start = Date.now()
-  while (Date.now() - start < msec) {}
-}
-
 test('sends 503 when event loop is overloaded, per maxEventLoopDelay', () => {
   return new Promise((resolve, reject) => {
     // Note: Event loop monitoring is inherently timing-sensitive and unreliable in integration tests
@@ -169,7 +164,8 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -206,7 +202,8 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -245,7 +242,8 @@ test('callback api with errorPropagationMode false (default)', function (t) {
     })
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -284,7 +282,8 @@ test('callback api with errorPropagationMode true', function (t) {
     })
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -321,7 +320,8 @@ test('in default mode, production:false leads to high detail client response mes
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -362,7 +362,8 @@ test('in default mode, production:true leads to standard 503 client response mes
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -406,7 +407,8 @@ test('in errorPropagationMode production:false sets expose:true on error object'
     })
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -446,7 +448,8 @@ test('in errorPropagationMode production:true sets expose:false on error object'
     })
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -481,7 +484,8 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -592,7 +596,8 @@ test('if logging option is a string, when overloaded, writes log message using r
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
     }, 6)
@@ -627,7 +632,8 @@ test('if logging option is a function, when overloaded calls the function with h
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
     }, 6)
@@ -664,7 +670,8 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
     res.end('content')
   })
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
     }, 6)

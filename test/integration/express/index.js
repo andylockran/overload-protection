@@ -155,7 +155,8 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -191,7 +192,8 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -231,7 +233,8 @@ test('errorPropagationMode:false (default)', function (t) {
   })
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -271,7 +274,8 @@ test('errorPropagationMode:true', function (t) {
   })
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -307,7 +311,8 @@ test('in default mode, production:false leads to high detail client response mes
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -347,7 +352,8 @@ test('in default mode, production:true leads to standard 503 client response mes
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -392,7 +398,8 @@ test('in errorPropagationMode production:false sets expose:true on error object'
   })
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -433,7 +440,8 @@ test('in errorPropagationMode production:true sets expose:false on error object'
   })
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -470,7 +478,8 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
   })
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -531,7 +540,8 @@ test('if logging option is a string, when overloaded, writes log message using r
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
     }, 6)
@@ -565,7 +575,8 @@ test('if logging option is a function, when overloaded calls the function with h
   app.use(protect)
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
     }, 6)
@@ -605,7 +616,8 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
   })
   var server = http.createServer(app)
 
-  server.listen(0, function () { const port = server.address().port
+  server.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       http.get('http://localhost:' + port).end()
     }, 6)

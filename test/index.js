@@ -1,6 +1,6 @@
 /**
  * Test suite for overload-protection module functionality.
- * 
+ *
  * This test file verifies the core behavior of the overload protection system including:
  * - Framework validation and configuration error handling
  * - Sampling interval management and cleanup
@@ -8,14 +8,14 @@
  * - Memory usage tracking (heap and RSS) with configurable thresholds
  * - Overload state detection across multiple metrics
  * - Backward compatibility with legacy JavaScript prototype mechanisms
- * 
+ *
  * Common test failure causes:
  * - Timing-sensitive tests may fail on slow/busy systems due to setTimeout/setImmediate delays
  * - Event loop delay tests depend on actual CPU load and may be flaky in CI environments
  * - Memory mocking tests require process.memoryUsage to be properly restored after each test
  * - Tests using global.setInterval/clearInterval mocks must ensure proper cleanup
  * - Race conditions in async tests where instance.stop() is called before state updates
- * 
+ *
  * To debug failures:
  * 1. Check if timing thresholds need adjustment for your environment
  * 2. Verify that mocked globals (setInterval, clearInterval, memoryUsage) are restored
@@ -23,7 +23,7 @@
  * 4. Run tests in isolation to identify interdependencies
  * 5. Check for unhandled promise rejections or missing resolve/reject calls
  */
-"use strict"
+'use strict'
 import protect from '../index.js'
 
 test('throws if framework is unspecified', () => {
@@ -363,6 +363,7 @@ if (Object.setPrototypeOf) {
 
 if (!Object.setPrototypeOf) {
   test('Supports modern/future JS (Object.setPrototypeOf)', () => {
+    // eslint-disable-next-line no-proto
     Object.setPrototypeOf = function (o, proto) { o.__proto__ = proto }
     const instance = protect('http')
     // overload wouldn't be in instance if __proto__ wasn't set

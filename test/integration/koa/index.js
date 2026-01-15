@@ -61,7 +61,8 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function 
 
   app.use(protect)
 
-  var server = app.listen(0, function () { const port = server.address().port
+  var server = app.listen(0, function () {
+    const port = server.address().port
     var req = http.get('http://localhost:' + port)
     block(50000)
     req.on('response', function (res) {
@@ -92,7 +93,8 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () { const port = server.address().port
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -125,7 +127,8 @@ test('sends 503 when rss threshold is passed, as per maxRssBytes', function (t) 
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () { const port = server.address().port
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -159,7 +162,8 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () { const port = server.address().port
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
@@ -194,7 +198,8 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(0, function () { const port = server.address().port
+  var server = app.listen(0, function () {
+    const port = server.address().port
     setTimeout(function () {
       var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
