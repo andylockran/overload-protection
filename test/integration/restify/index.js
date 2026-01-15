@@ -17,7 +17,7 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function 
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     var req = http.get('http://localhost:3000')
@@ -49,7 +49,7 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -83,7 +83,7 @@ test('sends 503 when heap used threshold is passed, as per maxRssBytes', functio
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -118,7 +118,7 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -154,7 +154,7 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -190,9 +190,10 @@ test('errorPropagationMode:false (default)', function (t) {
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
-  server.use(function () {
+  server.get('/', async function (req, res) { res.end('content') })
+  server.use(function (req, res, next) {
     t.fail()
+    next()
   })
 
   server.listen(3000, function () {
@@ -228,7 +229,7 @@ test('errorPropagationMode:true', function (t) {
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
   server.use(function (err, req, res, next) {
     t.ok(err)
     t.is(err.statusCode, 503)
@@ -269,7 +270,7 @@ test('in default mode, production:false leads to high detail client response mes
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -309,7 +310,7 @@ test('in default mode, production:true leads to standard 503 client response mes
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -349,7 +350,7 @@ test('in errorPropagationMode production:false sets expose:true on error object'
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
   server.use(function (err, req, res, next) {
     t.ok(err)
     t.is(err.expose, true)
@@ -390,7 +391,7 @@ test('in errorPropagationMode production:true sets expose:false on error object'
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
   server.use(function (err, req, res, next) {
     t.ok(err)
     t.is(err.expose, false)
@@ -429,7 +430,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -489,7 +490,7 @@ test('if logging option is a string, when overloaded, writes log message using r
     next()
   })
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -523,7 +524,7 @@ test('if logging option is a function, when overloaded calls the function with h
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3000, function () {
     setTimeout(function () {
@@ -560,7 +561,7 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
     next()
   })
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
   server.listen(3000, function () {
     setTimeout(function () {
       http.get('http://localhost:3000').end()
@@ -590,7 +591,7 @@ test('if logStatsOnReq is true and logging option is a function, calls the funct
 
   var server = restify.createServer({name: 'myapp', version: '1.0.0'})
   server.use(protect)
-  server.get('/', function (req, res) { res.end('content') })
+  server.get('/', async function (req, res) { res.end('content') })
 
   server.listen(3001, function () {
     setTimeout(function () {
