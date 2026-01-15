@@ -22,7 +22,7 @@ if (typeof global.test !== 'function') {
         try {
           const maybe = fn(t)
           if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 300)
         } catch (err) { reject(err) }
       })
     })
@@ -64,7 +64,7 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', () => {
             try {
               const maybe = fn(t)
               if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-              setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+              setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 300)
             } catch (err) { reject(err) }
           })
         })

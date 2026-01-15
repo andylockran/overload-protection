@@ -32,7 +32,7 @@ if (typeof global.test === 'undefined') {
         try {
           const maybe = fn(t)
           if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 300)
         } catch (err) { reject(err) }
       })
     })

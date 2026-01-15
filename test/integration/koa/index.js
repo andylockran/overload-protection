@@ -5,27 +5,34 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import protection from '../../../index.js'
 
-// Inline minimal shim to run existing TAP-style tests under Vitest without external adapter
-var test = function (name, fn) {
-  it(name, async () => {
-    return new Promise((resolve, reject) => {
-      const t = {
-        is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
-        same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
-        ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
-        fail: (msg) => reject(new Error(msg || 'fail')),
-        throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
-        plan: function () {},
-        pass: function () {},
-        end: function () { resolve() }
-      }
-      try {
-        const maybe = fn(t)
-        if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-        setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
-      } catch (err) { reject(err) }
+// TAP-compatible wrapper: keep Vitest `test` behaviour for normal tests
+{
+  const originalTest = global.test && global.test.bind(global)
+  global.test = function (name, fn) {
+    if (!fn || fn.length === 0) {
+      if (originalTest) return originalTest(name, fn)
+      return it(name, fn)
+    }
+    it(name, async () => {
+      return new Promise((resolve, reject) => {
+        const t = {
+          is: (a, b) => { try { expect(a).toBe(b) } catch (e) { reject(e) } },
+          same: (a, b) => { try { expect(a).toEqual(b) } catch (e) { reject(e) } },
+          ok: (v) => { try { expect(v).toBeTruthy() } catch (e) { reject(e) } },
+          fail: (msg) => reject(new Error(msg || 'fail')),
+          throws: (fnc) => { try { fnc(); reject(new Error('did not throw')) } catch (e) {} },
+          plan: function () {},
+          pass: function () {},
+          end: function () { resolve() }
+        }
+        try {
+          const maybe = fn(t)
+          if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
+          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 300)
+        } catch (err) { reject(err) }
+      })
     })
-  })
+  }
 }
 
 function block (n) {
@@ -41,8 +48,8 @@ test('sends 503 when event loop is overloaded, per maxEventLoopDelay', function 
 
   app.use(protect)
 
-  var server = app.listen(3000, function () {
-    var req = http.get('http://localhost:3000')
+  var server = app.listen(0, function () { const port = server.address().port
+    var req = http.get('http://localhost:' + port)
     block(50000)
     req.on('response', function (res) {
       t.is(res.statusCode, 503)
@@ -72,9 +79,9 @@ test('sends 503 when heap used threshold is passed, as per maxHeapUsedBytes', fu
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -105,9 +112,9 @@ test('sends 503 when rss threshold is passed, as per maxRssBytes', function (t) 
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -139,9 +146,9 @@ test('sends Retry-After header as per clientRetrySecs', function (t) {
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         t.is(res.headers['retry-after'], '22')
@@ -174,9 +181,9 @@ test('does not set Retry-After header when clientRetrySecs is 0', function (t) {
   var app = new Koa()
   app.use(protect)
 
-  var server = app.listen(3000, function () {
+  var server = app.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         t.is('retry-after' in res.headers, false)

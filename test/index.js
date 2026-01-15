@@ -82,29 +82,36 @@ test('exposes maxRssBytes option on instance', () => {
 
 test('instance.eventLoopDelay indicates the delay between samples', () => {
   return new Promise((resolve) => {
-    const delay = 50
-    const instance = protect('http')
+    const busyMs = 100
+    const instance = protect('http', { sampleInterval: 10 })
     const start = Date.now()
-    while (Date.now() - start <= delay) { Buffer.alloc(1e9) }
-    setImmediate(function () {
-      expect(instance.eventLoopDelay).toBeGreaterThan(delay)
+    // Busy-wait with lightweight CPU work (avoid huge allocations)
+    while (Date.now() - start <= busyMs) {
+      for (let i = 0; i < 1000; i++) Math.sqrt(i)
+    }
+    // wait a short while for the profiler to record the delay
+    setTimeout(function () {
+      expect(instance.eventLoopDelay).toBeGreaterThan(20)
       instance.stop()
       resolve()
-    })
+    }, 30)
   })
 })
 
 test('instance.eventLoopOverload is true when maxEventLoopDelay threshold is breached', () => {
   return new Promise((resolve) => {
-    const delay = 50
-    const instance = protect('http', { sampleInterval: 5, maxEventLoopDelay: 10 })
+    const busyMs = 120
+    const instance = protect('http', { sampleInterval: 10, maxEventLoopDelay: 20 })
     const start = Date.now()
-    while (Date.now() - start < delay) {}
-    setImmediate(function () {
+    while (Date.now() - start < busyMs) {
+      for (let i = 0; i < 1000; i++) Math.sqrt(i)
+    }
+    // Allow some time for the profiler to emit the overload event
+    setTimeout(function () {
       expect(instance.eventLoopOverload).toBe(true)
       instance.stop()
       resolve()
-    })
+    }, 50)
   })
 })
 

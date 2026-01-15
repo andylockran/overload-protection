@@ -3,9 +3,14 @@
 import http from 'http'
 import protection from '../../../index.js'
 
-// Inline minimal shim to run existing TAP-style tests under Vitest
-if (typeof global.test !== 'function') {
+// TAP-compatible wrapper: keep Vitest `test` behaviour for normal tests
+{
+  const originalTest = global.test && global.test.bind(global)
   global.test = function (name, fn) {
+    if (!fn || fn.length === 0) {
+      if (originalTest) return originalTest(name, fn)
+      return it(name, fn)
+    }
     it(name, async () => {
       return new Promise((resolve, reject) => {
         const t = {
@@ -21,7 +26,7 @@ if (typeof global.test !== 'function') {
         try {
           const maybe = fn(t)
           if (maybe && typeof maybe.then === 'function') maybe.then(resolve, reject)
-          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 30000)
+          setTimeout(() => reject(new Error('Test did not call t.end() within timeout')), 300)
         } catch (err) { reject(err) }
       })
     })
@@ -382,9 +387,9 @@ test('in errorPropagationMode production:false sets expose:true on error object'
     })
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -422,9 +427,9 @@ test('in errorPropagationMode production:true sets expose:false on error object'
     })
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         server.close()
@@ -457,9 +462,9 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
     res.end('content')
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      var req = http.get('http://localhost:3000')
+      var req = http.get('http://localhost:' + port)
       req.on('response', function (res) {
         t.is(res.statusCode, 503)
         process.memoryUsage = function () {
@@ -471,7 +476,7 @@ test('resumes usual operation once load pressure is reduced under threshold', fu
           }
         }
         setTimeout(function () {
-          http.get('http://localhost:3000').on('response', function (res) {
+          http.get('http://localhost:' + port).on('response', function (res) {
             t.is(res.statusCode, 200)
             server.close()
             protect.stop()
@@ -567,10 +572,10 @@ test('if logging option is a string, when overloaded, writes log message using r
     res.end('content')
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
       sleep(500)
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
@@ -603,9 +608,9 @@ test('if logging option is a function, when overloaded calls the function with h
     res.end('content')
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
@@ -640,9 +645,9 @@ test('if logStatsOnReq is true and if logging option is a string, writes log mes
     res.end('content')
   })
 
-  server.listen(3000, function () {
+  server.listen(0, function () { const port = server.address().port
     setTimeout(function () {
-      http.get('http://localhost:3000').end()
+      http.get('http://localhost:' + port).end()
     }, 6)
   })
 })
