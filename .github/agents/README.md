@@ -6,7 +6,7 @@ This directory contains specialized GitHub Copilot agent configurations for this
 
 ### e11e-simplify.md - Package Simplification Agent
 
-**Purpose:** Helps simplify and modernize the overload-protection package according to e11e.dev (Eleven Elements) methodology and current Node.js best practices.
+**Purpose:** Helps simplify and modernize the overload-protection package according to e11e.dev Ecosystem Performance methodology (Eleven Elements) and current Node.js best practices.
 
 **When to use:**
 - When reviewing the package for simplification opportunities
@@ -30,7 +30,7 @@ This directory contains specialized GitHub Copilot agent configurations for this
 
 **What it covers:**
 
-The e11e.dev methodology focuses on eleven key areas:
+The e11e.dev Ecosystem Performance methodology focuses on eleven key areas:
 
 1. **Minimal Dependencies** - Reduce unnecessary external dependencies
 2. **Modern JavaScript** - Use ES modules and modern syntax
