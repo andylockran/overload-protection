@@ -48,6 +48,13 @@ jobs:
           node-version: 'lts/*'
           registry-url: 'https://registry.npmjs.org/'
 
+      - name: Configure package for npm registry
+        run: |
+          # Reset package.json for npm registry publishing
+          npm pkg set name="@andylockran/overload-protection"
+          npm pkg set publishConfig.registry="https://registry.npmjs.org"
+          npm pkg set publishConfig.access="public"
+
       - name: Publish to npm registry
         run: npm publish --access public
         env:
