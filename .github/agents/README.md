@@ -89,9 +89,8 @@ To create a new agent for this repository:
 
 ## Related Documentation
 
-- [Copilot Instructions](../copilot-instructions.md) - General GitHub Copilot guidelines for this repo
-- [README](../../readme.md) - Package documentation
-- [Contributing Guide](../../CONTRIBUTING.md) - If available
+- [Copilot Instructions](.github/copilot-instructions.md) - General GitHub Copilot guidelines for this repo
+- [README](readme.md) - Package documentation
 
 ## Feedback
 
