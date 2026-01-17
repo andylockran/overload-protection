@@ -199,7 +199,7 @@ When making changes:
 - Use `npm test` to validate changes
 - Use `npm run lint` to check code style
 - Use `npm run benchmarks` to verify performance impact
-- Review `.github/copilot-instructions.md` for project-specific guidelines
+- Review `../.github/copilot-instructions.md` for project-specific guidelines
 
 ## Success Criteria
 
