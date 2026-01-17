@@ -1,7 +1,7 @@
 {
   "type": "module",
-  "name": "overload-protection",
-  "version": "2.0.0",
+  "name": "@andylockran/overload-protection",
+  "version": "2.0.1",
   "main": "index.js",
   "exports": {
     ".": {
@@ -67,11 +67,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davidmarkclements/overload-protection.git"
+    "url": "git+https://github.com/andylockran/overload-protection.git"
   },
   "bugs": {
-    "url": "https://github.com/davidmarkclements/overload-protection/issues"
+    "url": "https://github.com/andylockran/overload-protection/issues"
   },
-  "homepage": "https://github.com/davidmarkclements/overload-protection#readme",
+  "homepage": "https://github.com/andylockran/overload-protection#readme",
   "description": "Load detection and shedding capabilities for http, express and koa"
 }
