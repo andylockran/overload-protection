@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 jobs:
   release:
@@ -16,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js for GitHub Packages
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
@@ -29,17 +30,27 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Configure package for GitHub Packages
+      - name: Configure package
         run: |
-          # Update package.json with scoped name and registry
+          # Update package.json with scoped name
           npm pkg set name="@andylockran/overload-protection"
-          npm pkg set publishConfig.registry="https://npm.pkg.github.com"
-          npm pkg set repository.url="git://github.com/davidmarkclements/overload-protection.git"
+          npm pkg set repository.url="git://github.com/andylockran/overload-protection.git"
 
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: npm publish --registry https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js for npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Publish to npm registry
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
