@@ -201,9 +201,10 @@ After the release completes:
 2. **Check GitHub Releases**: Visit the [Releases page](https://github.com/andylockran/overload-protection/releases) to see the new release
 3. **Check GitHub Packages**: Visit the [Packages tab](https://github.com/andylockran/overload-protection/pkgs/npm/overload-protection) to verify the package was published
 4. **Test installation**: Try installing the new version:
-   ```bash
-   npm install @andylockran/overload-protection@X.Y.Z
-   ```
+
+```bash
+npm install @andylockran/overload-protection@X.Y.Z
+```
 
 ### Release Sequence Diagram
 
