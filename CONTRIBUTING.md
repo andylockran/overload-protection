@@ -158,8 +158,13 @@ npm version minor
 # For MAJOR release (breaking changes):
 npm version major
 
-# For pre-release:
-npm version prerelease --preid=alpha
+# For pre-release (from a regular version):
+npm version prepatch --preid=alpha   # Creates X.Y.Z-alpha.0 from X.Y.Z
+npm version preminor --preid=alpha   # Creates X.Y.0-alpha.0 from X.Y.Z
+npm version premajor --preid=alpha   # Creates X.0.0-alpha.0 from X.Y.Z
+
+# For subsequent pre-releases (when already on a pre-release version):
+npm version prerelease --preid=alpha # Increments: X.Y.Z-alpha.0 -> X.Y.Z-alpha.1
 ```
 
 **What `npm version` does:**
@@ -323,12 +328,14 @@ git push origin main
 ```
 
 ```bash
-# ✅ CORRECT: Push with tags
+# ✅ CORRECT: Push with --follow-tags
 npm version patch
 git push origin main --follow-tags
-# Or separately:
+
+# Or push commit and specific tag separately:
+npm version patch
 git push origin main
-git push origin --tags
+git push origin v$(node -p "require('./package.json').version")
 ```
 
 ## Code Style
