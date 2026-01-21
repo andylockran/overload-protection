@@ -1,12 +1,13 @@
 # Contributing to overload-protection
 
-Thank you for your interest in contributing to overload-protection! This document provides guidelines for contributing to the project, with a focus on managing semantic versioning and releases.
+Thank you for your interest in contributing to overload-protection! This document provides guidelines for contributing to the project, with a focus on managing semantic versioning and releases using Changesets.
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
-- [Semantic Versioning](#semantic-versioning)
+- [Version Management with Changesets](#version-management-with-changesets)
+- [Conventional Commits](#conventional-commits)
 - [Release Process](#release-process)
 - [Code Style](#code-style)
 - [Testing](#testing)
@@ -40,173 +41,202 @@ npm run lint          # Check code style
 npm run benchmarks    # Run performance benchmarks
 ```
 
-## Semantic Versioning
+## Version Management with Changesets
 
-This project follows [Semantic Versioning 2.0.0](https://semver.org/). Version numbers use the format `MAJOR.MINOR.PATCH`:
+This project uses [Changesets](https://github.com/changesets/changesets) to manage versions and changelogs. Changesets automates the versioning process based on your changes and ensures proper semantic versioning.
 
-- **MAJOR** version: Incompatible API changes
-- **MINOR** version: Backwards-compatible functionality additions
-- **PATCH** version: Backwards-compatible bug fixes
+### What are Changesets?
+
+Changesets are files that describe the changes you've made and their impact on the version number. Each changeset includes:
+
+- **Type of change**: `major`, `minor`, or `patch`
+- **Description**: What changed and why
+
+### Creating a Changeset
+
+After making your changes, create a changeset:
+
+```bash
+npm run changeset
+```
+
+This will prompt you to:
+
+1. **Select the type of change**:
+   - `major` - Breaking changes (e.g., changed function signature, removed options)
+   - `minor` - New features (e.g., added new threshold type, framework support)
+   - `patch` - Bug fixes (e.g., fixed memory leak, corrected threshold calculation)
+
+2. **Write a summary**: Describe your change clearly
+
+The changeset file will be created in the `.changeset` directory and should be committed along with your code changes.
+
+### Example Workflow
+
+```bash
+# 1. Make your changes
+git checkout -b fix/memory-leak
+# ... edit files ...
+
+# 2. Create a changeset
+npm run changeset
+# Select: patch
+# Summary: "Fix memory leak in event loop monitoring"
+
+# 3. Commit everything together
+git add .
+git commit -m "fix: memory leak in event loop monitoring"
+
+# 4. Push and create PR
+git push origin fix/memory-leak
+```
+
+## Conventional Commits
+
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages. This provides an easy set of rules for creating an explicit commit history.
+
+### Commit Message Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types
+
+- **feat**: A new feature (minor version bump)
+- **fix**: A bug fix (patch version bump)
+- **docs**: Documentation only changes
+- **style**: Code style changes (formatting, semicolons, etc.)
+- **refactor**: Code changes that neither fix a bug nor add a feature
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks (e.g., dependencies, configs)
+- **ci**: Changes to CI/CD configuration
+
+### Breaking Changes
+
+For breaking changes (major version bump), add `!` after the type or include `BREAKING CHANGE:` in the footer:
+
+```bash
+feat!: change API signature for protect function
+
+BREAKING CHANGE: The protect function now requires options as the second parameter
+```
 
 ### Examples
 
-- `1.0.0` → `2.0.0`: Breaking change (e.g., changed function signature, removed options)
-- `1.0.0` → `1.1.0`: New feature (e.g., added new threshold type, new framework support)
-- `1.0.0` → `1.0.1`: Bug fix (e.g., fixed memory leak, corrected threshold calculation)
+```bash
+# Patch version - bug fix
+fix: correct threshold calculation in memory monitor
 
-### Determining Version Bump
+# Minor version - new feature
+feat: add support for Fastify framework
 
-Use this decision tree to determine which version component to increment:
+# Major version - breaking change
+feat!: change middleware signature to accept config object
 
-**Does your change break existing code?**
-- YES → Increment MAJOR version
-- NO → Continue...
+# Documentation
+docs: update README with new examples
 
-**Does your change add new functionality?**
-- YES → Increment MINOR version
-- NO → Continue...
+# Chore
+chore: update dependencies to latest versions
+```
 
-**Does your change fix a bug or improve documentation?**
-- YES → Increment PATCH version
+### Relationship with Changesets
 
-### Pre-release Versions
+While Changesets determine the version bump, Conventional Commits provide a consistent commit history that makes it easier to:
 
-For testing releases before they're ready for production, use pre-release identifiers:
+- Understand the project history
+- Generate meaningful changelogs
+- Identify the scope and impact of changes
 
-- `2.1.0-alpha.1` - Alpha release
-- `2.1.0-beta.1` - Beta release
-- `2.1.0-rc.1` - Release candidate
+**Best Practice**: Use Conventional Commits for your commit messages AND create a changeset for changes that affect the package version.
 
 ## Release Process
 
-The release process is fully automated through GitHub Actions. Here's how it works:
+The release process is fully automated through GitHub Actions and Changesets.
 
 ### Release Flow Diagram
 
 ```mermaid
 flowchart TD
-    A[Developer: Make Changes] --> B[Create Pull Request]
-    B --> C[PR Review & CI Tests]
-    C --> D{Tests Pass?}
-    D -->|No| E[Fix Issues]
-    E --> C
-    D -->|Yes| F[Merge to main branch]
+    A[Developer: Make Changes] --> B[Create Changeset]
+    B --> C[Commit with Conventional Commit]
+    C --> D[Create Pull Request]
+    D --> E[PR Review & CI Tests]
+    E --> F{Tests Pass?}
+    F -->|No| G[Fix Issues]
+    G --> E
+    F -->|Yes| H[Merge to main]
     
-    F --> G[Maintainer: Update package.json]
-    G --> H[Maintainer: Commit version bump]
-    H --> I[Maintainer: Create & push git tag]
+    H --> I[GitHub Actions: Changesets Bot]
+    I --> J{Has Changesets?}
+    J -->|Yes| K[Create Version PR]
+    J -->|No| L[No action needed]
     
-    I --> J[GitHub: Tag pushed event]
-    J --> K[GitHub Actions: release.yml triggered]
+    K --> M[Maintainer: Review Version PR]
+    M --> N[Merge Version PR]
+    N --> O[GitHub Actions: Publish]
     
-    K --> L[Checkout code]
-    L --> M[Run tests]
-    M --> N{Tests Pass?}
-    N -->|No| O[Release fails]
-    N -->|Yes| P[Publish to GitHub Packages]
-    
-    P --> Q[Publish to npm registry]
-    Q --> R[Create GitHub Release]
-    R --> S[Generate release notes]
-    S --> T[Release Complete ✓]
+    O --> P[Run tests]
+    P --> Q{Tests Pass?}
+    Q -->|No| R[Publish fails]
+    Q -->|Yes| S[Publish to npm]
+    S --> T[Publish to GitHub Packages]
+    T --> U[Create GitHub Release]
+    U --> V[Update changelog]
+    V --> W[Release Complete ✓]
     
     style A fill:#e1f5ff
-    style F fill:#fff4e1
-    style I fill:#ffe1f5
-    style K fill:#e1ffe1
-    style T fill:#99ff99
-    style O fill:#ff9999
+    style B fill:#fff4e1
+    style K fill:#ffe1f5
+    style O fill:#e1ffe1
+    style W fill:#99ff99
+    style R fill:#ff9999
     
-    classDef userAction fill:#e1f5ff,stroke:#0066cc,stroke-width:2px
-    classDef maintainerAction fill:#fff4e1,stroke:#cc6600,stroke-width:2px
-    classDef triggerAction fill:#ffe1f5,stroke:#cc0066,stroke-width:2px
+    classDef devAction fill:#e1f5ff,stroke:#0066cc,stroke-width:2px
+    classDef changesetAction fill:#fff4e1,stroke:#cc6600,stroke-width:2px
+    classDef maintainerAction fill:#ffe1f5,stroke:#cc0066,stroke-width:2px
     classDef automatedAction fill:#e1ffe1,stroke:#00cc66,stroke-width:2px
     
-    class A,B userAction
-    class G,H,I maintainerAction
-    class J triggerAction
-    class K,L,M,P,Q,R,S automatedAction
+    class A,C,D devAction
+    class B changesetAction
+    class M,N maintainerAction
+    class I,O,P,S,T,U,V automatedAction
 ```
 
-### Step-by-Step Release Instructions
+### How It Works
 
-#### 1. Merge Changes to Main
+1. **Developer Workflow**:
+   - Make code changes
+   - Run `npm run changeset` to create a changeset
+   - Commit changes with conventional commit message
+   - Create pull request
 
-First, ensure all changes have been merged to the `main` branch through the normal PR process:
+2. **PR Merge**:
+   - Once PR is approved and tests pass, merge to `main`
 
-1. Create a pull request with your changes
-2. Ensure all CI tests pass
-3. Get approval from maintainers
-4. Merge the PR to `main`
+3. **Changesets Bot**:
+   - Detects changesets in `main` branch
+   - Automatically creates a "Version Packages" PR
+   - This PR updates `package.json` version and `CHANGELOG.md`
 
-#### 2. Update Package Version
+4. **Version PR Merge**:
+   - Maintainer reviews and merges the Version PR
+   - This triggers the publish workflow
 
-After merging to `main`, a maintainer must update the version in `package.json`:
+5. **Automated Publishing**:
+   - Runs tests one final time
+   - Publishes to npm registry
+   - Publishes to GitHub Packages
+   - Creates GitHub Release with notes
+   - Updates changelog
 
-```bash
-# Checkout main branch and pull latest changes
-git checkout main
-git pull origin main
-
-# Update version based on semantic versioning rules
-# For PATCH release (bug fixes):
-npm version patch
-
-# For MINOR release (new features):
-npm version minor
-
-# For MAJOR release (breaking changes):
-npm version major
-
-# For pre-release (from a regular version):
-npm version prepatch --preid=alpha   # Creates X.Y.Z-alpha.0 from X.Y.Z
-npm version preminor --preid=alpha   # Creates X.Y.0-alpha.0 from X.Y.Z
-npm version premajor --preid=alpha   # Creates X.0.0-alpha.0 from X.Y.Z
-
-# For subsequent pre-releases (when already on a pre-release version):
-npm version prerelease --preid=alpha # Increments: X.Y.Z-alpha.0 -> X.Y.Z-alpha.1
-```
-
-**What `npm version` does:**
-1. Updates the `version` field in `package.json`
-2. Creates a git commit with the message "X.Y.Z"
-3. Creates a git tag `vX.Y.Z`
-
-#### 3. Push the Version Tag
-
-Push both the commit and the tag to GitHub:
-
-```bash
-# Push the version commit and tag
-git push origin main --follow-tags
-```
-
-**Important:** The `--follow-tags` flag ensures the tag is pushed along with the commit.
-
-#### 4. Automated Release
-
-Once the tag is pushed, GitHub Actions automatically:
-
-1. **Triggers the release workflow** (`.github/workflows/release.yml`)
-2. **Runs tests** to ensure code quality
-3. **Publishes to GitHub Packages** (`@andylockran/overload-protection`)
-4. **Publishes to npm registry** (if `NPM_TOKEN` secret is configured)
-5. **Creates a GitHub Release** with auto-generated release notes
-
-### Verification
-
-After the release completes:
-
-1. **Check GitHub Actions**: Visit the [Actions tab](https://github.com/andylockran/overload-protection/actions) to verify the workflow succeeded
-2. **Check GitHub Releases**: Visit the [Releases page](https://github.com/andylockran/overload-protection/releases) to see the new release
-3. **Check GitHub Packages**: Visit the [Packages tab](https://github.com/andylockran/overload-protection/pkgs/npm/overload-protection) to verify the package was published
-4. **Test installation**: Try installing the new version:
-
-```bash
-npm install @andylockran/overload-protection@X.Y.Z
-```
-
-### Release Sequence Diagram
+### Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -214,130 +244,126 @@ sequenceDiagram
     actor Dev as Developer
     participant PR as Pull Request
     participant Main as main branch
+    participant Bot as Changesets Bot
     actor Maint as Maintainer
-    participant Git as Git Repository
     participant GHA as GitHub Actions
-    participant Pkg as GitHub Packages
     participant NPM as npm Registry
+    participant GPkg as GitHub Packages
     participant Rel as GitHub Release
     
-    Dev->>PR: Create PR with changes
+    Dev->>Dev: Make changes & create changeset
+    Dev->>PR: Create PR with changeset
     PR->>PR: CI tests run
     PR->>Main: Merge after approval
     
-    Note over Main,Maint: Version Management Phase
-    Maint->>Main: git checkout main
-    Maint->>Main: git pull origin main
-    Maint->>Main: npm version [patch|minor|major]
-    Note over Main: package.json updated<br/>commit & tag created locally
+    Note over Main,Bot: Automated Version Management
+    Bot->>Bot: Detect changesets in main
+    Bot->>PR: Create "Version Packages" PR
+    Note over PR: Updates package.json & CHANGELOG.md
     
-    Maint->>Git: git push origin main --follow-tags
-    Note over Git: Commit & tag pushed
+    Maint->>PR: Review version PR
+    Maint->>Main: Merge version PR
     
-    Note over Git,GHA: Automated Release Phase
-    Git->>GHA: Tag push event (v*)
-    GHA->>GHA: Checkout code at tag
-    GHA->>GHA: Install dependencies
+    Note over Main,GHA: Automated Publishing
+    Main->>GHA: Trigger publish workflow
     GHA->>GHA: Run tests
     
     alt Tests pass
-        GHA->>Pkg: Publish package
-        Pkg-->>GHA: Success
-        GHA->>NPM: Publish package (optional)
+        GHA->>NPM: Publish package
         NPM-->>GHA: Success
+        GHA->>GPkg: Publish package
+        GPkg-->>GHA: Success
         GHA->>Rel: Create release
         Rel-->>GHA: Release created
-        Note over GHA,Rel: Release notes auto-generated
+        Note over GHA,Rel: Changelog auto-generated
     else Tests fail
         GHA->>Maint: Notify failure
         Note over Maint: Fix issues and retry
     end
 ```
 
-### Manual Release (Emergency Only)
+### What Happens Automatically
 
-If you need to trigger a release manually without creating a new tag:
+✅ **Version bumping**: Based on changeset type (major/minor/patch)  
+✅ **Changelog generation**: From changeset descriptions  
+✅ **Git tagging**: Automatic tag creation  
+✅ **Package publishing**: To npm and GitHub Packages  
+✅ **Release notes**: Generated from changesets  
 
-1. Go to the [Actions tab](https://github.com/andylockran/overload-protection/actions)
-2. Select the "Release Package" workflow
-3. Click "Run workflow"
-4. Select the branch
-5. Click "Run workflow"
+### Maintainer Actions
 
-**Note:** This should only be used in emergencies, as it bypasses version control.
+As a maintainer, you only need to:
+
+1. **Review and merge** feature PRs (with changesets)
+2. **Review and merge** the "Version Packages" PR created by Changesets bot
+
+That's it! Everything else is automated.
 
 ## Version Management Best Practices
 
 ### DO ✅
 
-- **Always update `package.json` version** before creating a release tag
-- **Use `npm version`** command to ensure consistency
-- **Follow semantic versioning** strictly
-- **Write meaningful commit messages** for version bumps
-- **Test thoroughly** before releasing
-- **Document breaking changes** in PR descriptions
+- **Always create a changeset** when your PR affects package functionality
+- **Use conventional commits** for clear commit history
+- **Write descriptive changeset summaries** - they become changelog entries
+- **Choose the correct version bump** (major/minor/patch)
+- **Test thoroughly** before creating your PR
+- **One changeset per logical change** for clarity
 
 ### DON'T ❌
 
-- **Don't manually edit** the version in `package.json` without creating a matching tag
-- **Don't push tags** without pushing the corresponding commit
-- **Don't skip versions** (e.g., going from 1.0.0 to 1.0.2)
-- **Don't reuse tags** (delete and recreate)
-- **Don't create tags** on feature branches (only on `main`)
+- **Don't skip changesets** for functional changes
+- **Don't manually edit** `package.json` version
+- **Don't create changesets** for documentation-only changes
+- **Don't merge version PRs** without reviewing the changes
+- **Don't mix multiple unrelated changes** in one PR
 
-### Common Mistakes
+### When to Create a Changeset
 
-#### Mistake 1: Tag without Version Bump
+| Change Type | Create Changeset? | Version Bump |
+|-------------|-------------------|--------------|
+| Bug fix | ✅ Yes | patch |
+| New feature | ✅ Yes | minor |
+| Breaking change | ✅ Yes | major |
+| Documentation | ❌ No | - |
+| Tests only | ❌ No | - |
+| Code formatting | ❌ No | - |
+| Dependencies update | ⚠️ Maybe | patch |
+| Performance improvement | ✅ Yes | patch/minor |
 
-```bash
-# ❌ WRONG: Creating tag without updating package.json
-git tag v2.0.2
-git push origin v2.0.2
-# Result: package.json still shows v2.0.1, release is inconsistent
-```
+### Multiple Changes
 
-```bash
-# ✅ CORRECT: Use npm version
-npm version patch
-git push origin main --follow-tags
-# Result: package.json and tag are synchronized
-```
-
-#### Mistake 2: Version Bump without Tag
+If your PR includes multiple changes, you can create multiple changesets:
 
 ```bash
-# ❌ WRONG: Updating package.json without creating tag
-# Edit package.json manually: "version": "2.0.2"
-git commit -m "Bump version"
-git push origin main
-# Result: No tag created, no release triggered
+# First feature
+npm run changeset
+# Select: minor
+# Summary: "Add Fastify support"
+
+# Second feature  
+npm run changeset
+# Select: minor
+# Summary: "Add heap threshold monitoring"
 ```
 
-```bash
-# ✅ CORRECT: Use npm version (creates both commit and tag)
-npm version patch
-git push origin main --follow-tags
-```
+Both changesets will be processed together, and the highest version bump will be used.
 
-#### Mistake 3: Forgetting --follow-tags
+## Semantic Versioning
 
-```bash
-# ❌ WRONG: Pushing without tags
-npm version patch
-git push origin main
-# Result: Commit pushed but tag remains local, no release triggered
-```
+This project follows [Semantic Versioning 2.0.0](https://semver.org/). Version numbers use the format `MAJOR.MINOR.PATCH`:
 
-```bash
-# ✅ CORRECT: Push with --follow-tags
-npm version patch
-git push origin main --follow-tags
+- **MAJOR** version: Incompatible API changes (breaking changes)
+- **MINOR** version: Backwards-compatible functionality additions
+- **PATCH** version: Backwards-compatible bug fixes
 
-# Or push commit and specific tag separately:
-npm version patch
-git push origin main
-git push origin v$(node -p "require('./package.json').version")
-```
+### Examples
+
+- `1.0.0` → `2.0.0`: Breaking change (changed function signature)
+- `1.0.0` → `1.1.0`: New feature (added framework support)
+- `1.0.0` → `1.0.1`: Bug fix (fixed memory leak)
+
+Changesets handles the version bumping automatically based on the changeset types you create.
 
 ## Code Style
 
@@ -374,19 +400,33 @@ npm run covr         # Generate HTML report
 
 ## Pull Request Guidelines
 
-1. **Branch naming**: Use descriptive names (e.g., `feature/add-fastify-support`, `fix/memory-leak`)
-2. **Commit messages**: Write clear, concise messages
-3. **Tests**: Add tests for new features
-4. **Documentation**: Update README.md if needed
-5. **Breaking changes**: Clearly mark in PR description
+1. **Branch naming**: Use descriptive names (e.g., `feat/add-fastify`, `fix/memory-leak`)
+2. **Commit messages**: Follow Conventional Commits specification
+3. **Changesets**: Create changeset for functional changes
+4. **Tests**: Add tests for new features and bug fixes
+5. **Documentation**: Update README.md if needed
+6. **Code style**: Ensure `npm run lint` passes
+7. **Tests**: Ensure `npm test` passes
+
+### PR Checklist
+
+Before submitting your PR:
+
+- [ ] Code changes are complete and tested
+- [ ] Tests pass locally (`npm test`)
+- [ ] Linting passes (`npm run lint`)
+- [ ] Changeset created if needed (`npm run changeset`)
+- [ ] Commit messages follow Conventional Commits
+- [ ] Documentation updated if needed
+- [ ] No unrelated changes included
 
 ## Questions?
 
 If you have questions about contributing or the release process:
 
 1. Check existing [issues](https://github.com/andylockran/overload-protection/issues)
-2. Open a new issue with the question
-3. Tag it with `question` label
+2. Open a new issue with the `question` label
+3. Review the [Changesets documentation](https://github.com/changesets/changesets)
 
 ## License
 

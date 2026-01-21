@@ -15,7 +15,10 @@
     "ci": "npm run lint && npm run cov",
     "cov": "vitest --coverage",
     "covr": "vitest --coverage --coverage-report=html",
-    "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
+    "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run ci && changeset publish"
   },
   "pre-commit": [
     "test",
@@ -41,6 +44,7 @@
   "author": "David Mark Clements <huperekchuno@googlemail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@changesets/cli": "^2.27.1",
     "@koa/router": "^15.0.0",
     "@vitest/coverage-v8": "^2.1.9",
     "autocannon": "^8.0.0",

@@ -822,7 +822,9 @@ This architectural decision ensures reliable, fast tests while still verifying a
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to this project, including:
-- Semantic versioning and release process
+- Version management with Changesets
+- Conventional Commits specification
+- Automated release process
 - Development workflow
 - Testing and code style requirements
 
