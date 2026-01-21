@@ -819,6 +819,15 @@ This architectural decision ensures reliable, fast tests while still verifying a
 - [standard](https://github.com/standard/standard): JavaScript Standard Style
 - [vitest](https://vitest.dev): Unit test framework
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to this project, including:
+- Version management with Changesets
+- Conventional Commits specification
+- Automated release process
+- Development workflow
+- Testing and code style requirements
+
 ## License
 
 MIT
