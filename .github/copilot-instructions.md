@@ -23,7 +23,7 @@ A Node.js middleware library providing load-shedding capabilities for HTTP serve
 ### Profiler Pattern
 The `profiler` object (created in [index.js](../index.js#L73-L82)) is the state container:
 - Properties: `overload`, `eventLoopOverload`, `heapUsedOverload`, `rssOverload`, plus threshold values
-- Updated by `loopbench` library (event loop monitoring) and periodic `checkMemory()` calls
+- Updated by a unified, unref'd sampling timer measuring `process.hrtime.bigint()` loop lag and memory
 - The returned function/middleware has `profiler` in its prototype chain, exposing state as instance properties
 
 ### Two Operating Modes
@@ -94,7 +94,7 @@ Manual memory checks (not event-driven) via `setInterval` with `unref()` to prev
 ## Integration Points
 
 ### External Dependencies
-- **loopbench**: Event loop delay monitoring library (main dependency)
+- **Zero external dependencies**: Built directly on native Node.js APIs (`process.hrtime.bigint()`, `process.memoryUsage()`)
 - Framework packages (express, koa) are devDependencies for testing only
 
 ### Framework Adaptation Strategy

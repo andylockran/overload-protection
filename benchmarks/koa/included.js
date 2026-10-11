@@ -1,11 +1,12 @@
 'use strict'
 
-const Koa = require('koa')
-const Router = require('@koa/router')
-const protect = require('../..')('koa')
+import Koa from 'koa'
+import Router from '@koa/router'
+import protectInit from '../../index.js'
 
 const router = new Router()
 const app = new Koa()
+const protect = protectInit('koa')
 
 app.use(protect)
 
@@ -15,4 +16,4 @@ router.get('/', async function (ctx) {
 
 app.use(router.routes())
 
-module.exports = app
+export default app

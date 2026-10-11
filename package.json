@@ -13,8 +13,9 @@
     "test": "vitest run",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
-    "cov": "vitest --coverage",
-    "covr": "vitest --coverage --coverage-report=html",
+    "cov": "vitest run --coverage",
+    "covr": "vitest run --coverage --coverage-report=html",
+    "test:report": "vitest run --coverage --reporter=default --reporter=html --reporter=json --outputFile.json=test-results.json --outputFile.html=html-report/index.html && node scripts/generate-pr-report.js",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
@@ -43,15 +44,13 @@
   "devDependencies": {
     "@koa/router": "^15.0.0",
     "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/ui": "^2.1.9",
     "autocannon": "^8.0.0",
     "express": "^4.22.1",
     "koa": "^2.16.3",
     "pre-commit": "^1.2.2",
     "standard": "^17.1.0",
     "vitest": "^2.1.8"
-  },
-  "dependencies": {
-    "loopbench": "^2.0.0"
   },
   "standard": {
     "globals": [

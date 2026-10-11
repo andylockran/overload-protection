@@ -1,11 +1,11 @@
 'use strict'
-const autocannon = require('autocannon')
 
-let included = require('./included')
-let excluded = require('./excluded')
+import autocannon from 'autocannon'
+import includedApp from './included.js'
+import excludedApp from './excluded.js'
 
 console.log('express with overload protection:')
-included = included.listen(3000)
+const included = includedApp.listen(3000)
 let instance = autocannon({
   url: 'http://localhost:3000',
   connections: 10,
@@ -15,7 +15,7 @@ let instance = autocannon({
   instance.stop()
   included.close()
   console.log('\nexpress without overload protection:')
-  excluded = excluded.listen(3000)
+  const excluded = excludedApp.listen(3000)
   instance = autocannon({
     url: 'http://localhost:3000',
     connections: 10,
@@ -28,5 +28,4 @@ let instance = autocannon({
   autocannon.track(instance, { renderProgressBar: true })
 })
 
-// just render results
 autocannon.track(instance, { renderProgressBar: true })
