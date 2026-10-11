@@ -1,0 +1,92 @@
+name: PR Review & Test Report
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Test & Review PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Code Quality & Lint Check
+        run: npm run lint
+
+      - name: Run Tests with Coverage and HTML Reports
+        run: |
+          npx vitest run --coverage --reporter=default --reporter=html --reporter=json \
+            --outputFile.json=test-results.json \
+            --outputFile.html=html-report/index.html
+
+      - name: Generate PR Summary Report
+        if: always()
+        run: node scripts/generate-pr-report.js
+
+      - name: Upload Vitest HTML Test Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-html-report
+          path: html-report/
+          retention-days: 14
+
+      - name: Upload HTML Coverage Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html-report
+          path: coverage/
+          retention-days: 14
+
+      - name: Post or Update PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('pr-summary.md')) return;
+            const reportBody = fs.readFileSync('pr-summary.md', 'utf8');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.body.includes('<!-- pr-test-report -->')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: reportBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: reportBody
+              });
+            }

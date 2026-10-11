@@ -15,6 +15,7 @@
     "ci": "npm run lint && npm run cov",
     "cov": "vitest run --coverage",
     "covr": "vitest run --coverage --coverage-report=html",
+    "test:report": "vitest run --coverage --reporter=default --reporter=html --reporter=json --outputFile.json=test-results.json --outputFile.html=html-report/index.html && node scripts/generate-pr-report.js",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
