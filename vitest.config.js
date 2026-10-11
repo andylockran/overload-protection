@@ -7,6 +7,11 @@ export default defineConfig({
     include: ['test/index.js', 'test/integration/**/index.js'],
     threads: false,
     maxThreads: 1,
-    testTimeout: 3000
+    testTimeout: 3000,
+    coverage: {
+      provider: 'v8',
+      include: ['index.js', 'lib/**/*.js'],
+      reporter: ['text', 'json-summary', 'html']
+    }
   }
 })
