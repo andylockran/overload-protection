@@ -13,8 +13,8 @@
     "test": "vitest run",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
-    "cov": "vitest --coverage",
-    "covr": "vitest --coverage --coverage-report=html",
+    "cov": "vitest run --coverage",
+    "covr": "vitest run --coverage --coverage-report=html",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
@@ -49,9 +49,6 @@
     "pre-commit": "^1.2.2",
     "standard": "^17.1.0",
     "vitest": "^2.1.8"
-  },
-  "dependencies": {
-    "loopbench": "^2.0.0"
   },
   "standard": {
     "globals": [

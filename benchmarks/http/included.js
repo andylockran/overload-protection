@@ -1,12 +1,14 @@
 'use strict'
 
-const http = require('http')
+import http from 'http'
+import protectInit from '../../index.js'
+
 const server = http.createServer(serve)
-const protect = require('../..')('http')
+const protect = protectInit('http')
 
 function serve (req, res) {
   if (protect(req, res) === true) return
   res.end('content')
 }
 
-module.exports = server
+export default server

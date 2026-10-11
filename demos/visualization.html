@@ -211,7 +211,7 @@
       <h3>How It Works</h3>
       <p>
         <strong>Event Loop Monitoring:</strong> The overload-protection library uses 
-        <span class="code">loopbench</span> to measure the delay between event loop ticks. 
+        high-resolution timer sampling via <span class="code">process.hrtime.bigint()</span> to measure the delay between event loop ticks. 
         When the event loop is busy with CPU-intensive tasks, the delay increases.
       </p>
       <p>
