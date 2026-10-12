@@ -999,7 +999,14 @@
 <body>
   <div class="container">
     <header>
-      <div class="badge-pill">⚡ Observability Dashboard · 2026 Node.js Fleet Architecture</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div class="badge-pill">⚡ Observability Dashboard · 2026 Node.js Fleet Architecture</div>
+        <div style="display: flex; gap: 8px;">
+          <a href="presentation.html" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); padding: 4px 12px; border-radius: 9999px; font-size: 11px; text-decoration: none; font-weight: 600;">📽️ Presentation Deck</a>
+          <a href="../" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 4px 12px; border-radius: 9999px; font-size: 11px; text-decoration: none; font-weight: 600;">📖 Documentation &amp; Overview</a>
+          <a href="https://github.com/andylockran/overload-protection" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 4px 12px; border-radius: 9999px; font-size: 11px; text-decoration: none; font-weight: 600;">🐙 GitHub Repo</a>
+        </div>
+      </div>
       <h1>Node.js Fleet Overload Protection</h1>
       <div class="subtitle">
         Simulating a 6-container Node.js fleet behind an <strong>AWS Application Load Balancer (ALB)</strong>.
@@ -1041,10 +1048,10 @@
             <span class="signal-status-pill pill-healthy" id="pillTraffic">Target Met</span>
           </div>
           <div class="signal-main-metric">
-            <span class="signal-val" id="signalTrafficRate" style="color: #06b6d4;">12,000</span>
+            <span class="signal-val" id="signalTrafficRate" style="color: #06b6d4;">60</span>
             <span style="font-size: 13px; color: #94a3b8;">req/min</span>
           </div>
-          <div class="signal-subtext" id="signalTrafficRPS">~200 req/sec fleet-wide (33 req/s / pod)</div>
+          <div class="signal-subtext" id="signalTrafficRPS">~1 req/sec fleet-wide (0.17 req/s / pod)</div>
         </div>
 
         <!-- 3. Errors (Error Rate) -->
@@ -1093,8 +1100,8 @@
         <!-- 1. Discrete Users Starting Journeys -->
         <div class="ll-stat-card">
           <span class="ll-stat-label">Users Starting Journeys</span>
-          <span class="ll-stat-val" id="llUserJourneys" style="color: #38bdf8;">1,333 /min</span>
-          <span class="ll-stat-sub" id="llUserRps">~22.2 new users/sec</span>
+          <span class="ll-stat-val" id="llUserJourneys" style="color: #38bdf8;">7 /min</span>
+          <span class="ll-stat-sub" id="llUserRps">~0.1 new users/sec</span>
         </div>
 
         <!-- 2. Single-Container Safe Capacity -->
@@ -1151,11 +1158,11 @@
           <span style="font-size: 11px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 8px; border-radius: 4px;">Click a scenario to trigger external traffic patterns</span>
         </div>
         <div class="story-desc" id="storyDesc">
-          <strong>Baseline (12,000 req/min, 2% Crypto):</strong> Fleet runs completely healthy. Single 16ms tasks have minimal impact (~18ms lag &lt; 42ms limit) and drain in ~200ms. 0% shed, 0% error rate.
+          <strong>Baseline (60 req/min, 2% Crypto):</strong> Fleet runs completely healthy at 1 req/sec (~1 request every 6s per pod). Single 16ms tasks have minimal impact (~18ms lag &lt; 42ms limit) and drain in ~200ms. 0% shed, 0% error rate.
         </div>
       </div>
       <div class="story-steps">
-        <button class="story-step-btn active" id="btnStory1" onclick="runStoryStep(1)">1. Baseline (12k req/min)</button>
+        <button class="story-step-btn active" id="btnStory1" onclick="runStoryStep(1)">1. Baseline (60 req/min)</button>
         <button class="story-step-btn" id="btnStory2" onclick="runStoryStep(2)">2. Compounded Tasks (Prot ON)</button>
         <button class="story-step-btn" id="btnStory3" onclick="runStoryStep(3)">3. Unprotected Failure (Prot OFF)</button>
         <button class="story-step-btn" id="btnStory4" onclick="runStoryStep(4)">4. +50% Surge (Autoscaler Lag)</button>
@@ -1177,18 +1184,18 @@
         <div class="slider-group">
           <div class="slider-label-row">
             <span>Incoming Traffic:</span>
-            <strong id="rateLabel" style="color: #38bdf8;">12,000 req/min</strong>
+            <strong id="rateLabel" style="color: #38bdf8;">60 req/min</strong>
           </div>
-          <input type="range" id="rateSlider" min="3000" max="500000" step="1000" value="12000">
+          <input type="range" id="rateSlider" min="10" max="500000" step="10" value="60">
         </div>
 
         <!-- User Journeys Starting Slider -->
         <div class="slider-group">
           <div class="slider-label-row">
             <span>User Journeys:</span>
-            <strong id="journeyLabel" style="color: #818cf8;">1,333 /min</strong>
+            <strong id="journeyLabel" style="color: #818cf8;">7 /min</strong>
           </div>
-          <input type="range" id="journeySlider" min="300" max="55555" step="100" value="1333">
+          <input type="range" id="journeySlider" min="1" max="55555" step="1" value="7">
         </div>
 
         <!-- Crypto Session Ratio Slider -->
@@ -1232,7 +1239,7 @@
     <!-- Live Event Ticker -->
     <div class="ticker-bar">
       <div class="ticker-message" id="tickerMsg">
-        🟢 Fleet healthy at 12,000 req/min (~200 req/s). Protection enabled on all containers.
+        🟢 Fleet healthy at 60 req/min (~1 req/s). Protection enabled on all containers.
       </div>
       <div style="font-size: 11px; color: #64748b; font-family: monospace;">OVERLOAD-PROTECTION v3.0</div>
     </div>
@@ -1379,7 +1386,7 @@
     const POD_COLORS = ['#38bdf8', '#34d399', '#f43f5e', '#c084fc', '#2dd4bf', '#fb923c'];
     const NUM_PODS = 6;
     let maxDelayThreshold = 42;
-    let requestsPerMinute = 12000; // Sensible starting baseline: 12,000 req/min (~200 req/s across fleet)
+    let requestsPerMinute = 60; // Sensible starting baseline: 60 req/min (~1 req/s across fleet)
     let cryptoRatioPercent = 2; // % of requests that are cryptographic session creation
     let cryptoTaskImpactMs = 16; // Blocking impact (ms) of a single cryptographic task
     let burstTaskCount = 4; // Number of tasks injected in a burst
@@ -1534,32 +1541,39 @@
       // Track ring
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = pod.overload ? 'rgba(239, 68, 68, 0.35)' : 'rgba(56, 189, 248, 0.15)';
-      ctx.lineWidth = 4;
+      ctx.strokeStyle = pod.overload ? 'rgba(239, 68, 68, 0.4)' : (pod.cryptoBacklog > 0 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(56, 189, 248, 0.2)');
+      ctx.lineWidth = 3.5;
       ctx.stroke();
 
       // Phases notches (Timers, Poll, Check, Close)
+      const normalizedAngle = ((pod.wheelAngle % 360) + 360) % 360;
+
       for (let i = 0; i < 4; i++) {
         const ang = (i * Math.PI / 2) - Math.PI / 2;
         const nx = cx + Math.cos(ang) * (r + 4);
         const ny = cy + Math.sin(ang) * (r + 4);
+
+        const phaseDeg = (i === 0) ? 270 : (i === 1 ? 0 : (i === 2 ? 90 : 180));
+        const diffDeg = Math.abs(normalizedAngle - phaseDeg);
+        const isActivePhase = diffDeg < 40 || diffDeg > 320;
+
         ctx.beginPath();
-        ctx.arc(nx, ny, 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = pod.overload ? '#ef4444' : pod.color;
+        ctx.arc(nx, ny, isActivePhase ? 3.5 : 2.0, 0, Math.PI * 2);
+        ctx.fillStyle = isActivePhase ? (pod.overload ? '#ef4444' : (pod.cryptoBacklog > 0 ? '#fbbf24' : '#38bdf8')) : 'rgba(148, 163, 184, 0.4)';
         ctx.fill();
       }
 
       // Spinning Hand / Needle
       const rad = (pod.wheelAngle * Math.PI) / 180;
-      const armX = cx + Math.cos(rad) * (r - 3);
-      const armY = cy + Math.sin(rad) * (r - 3);
+      const armX = cx + Math.cos(rad) * (r - 2);
+      const armY = cy + Math.sin(rad) * (r - 2);
 
       // Needle
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(armX, armY);
-      ctx.strokeStyle = pod.overload ? '#f87171' : (pod.cryptoBacklog > 0 ? '#fbbf24' : pod.color);
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = pod.overload ? '#ef4444' : (pod.cryptoBacklog > 0 ? '#fbbf24' : pod.color);
+      ctx.lineWidth = 2.8;
       ctx.lineCap = 'round';
       ctx.stroke();
 
@@ -1568,6 +1582,13 @@
       ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = pod.overload ? '#ef4444' : '#fff';
       ctx.fill();
+
+      // Loop status label inside wheel matching node summary
+      ctx.font = '8px -apple-system, BlinkMacSystemFont, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = pod.overload ? '#ef4444' : (pod.cryptoBacklog > 0 ? '#fbbf24' : '#64748b');
+      const statusText = pod.overload ? (pod.protectionEnabled ? 'SHED' : 'CHOKE') : (pod.cryptoBacklog > 0 ? 'BUSY' : 'FAST');
+      ctx.fillText(statusText, cx, cy + 14);
     }
 
     // Traffic Flow Canvas
@@ -1883,7 +1904,7 @@
           targetIndex: targetIndex,
           isCrypto: isCrypto,
           progress: 0,
-          speed: 0.045 + Math.random() * 0.02
+          speed: 0.025 + Math.random() * 0.01
         });
       }
     }
@@ -2078,10 +2099,12 @@
           // Overload check
           pod.overload = pod.delay > maxDelayThreshold;
 
-          // Wheel rotation speed: DO NOT STOP during queue collapse!
-          // In Node.js, the event loop does not stop during queue collapse;
-          // it continues actively spinning on the single main thread, churning through callbacks and executing work to completion.
-          const spinSpeed = pod.overload ? (pod.protectionEnabled ? 2.5 : 1.4) : Math.max(1.8, 7.5 - (pod.delay / 7));
+          // Wheel rotation speed: physically tied to event loop delay and state!
+          // Normal baseline (~2.2ms delay) -> 5.2 deg/frame (fast, smooth rotation matching Healthy summary)
+          // Heavy crypto task (~16-20ms delay) -> 2.8 deg/frame (visibly slower, busy executing sync work)
+          // Overload limit (~42ms delay) -> 1.8 deg/frame (strained)
+          // Queue collapse (>100ms delay) -> 0.9-1.2 deg/frame (churning callbacks, but NEVER stops!)
+          const spinSpeed = Math.max(0.9, Math.min(5.5, 7.5 / Math.pow(pod.delay / 2.2, 0.45)));
           pod.wheelAngle = (pod.wheelAngle + spinSpeed) % 360;
 
           // Task indicator text
@@ -2217,12 +2240,12 @@
       const burstSlider = document.getElementById('burstSlider');
 
       if (step === 1) {
-        // Baseline: 12,000 req/min, 2% crypto, 16ms tasks, protection ON on all pods
-        requestsPerMinute = 12000;
+        // Baseline: 60 req/min, 2% crypto, 16ms tasks, protection ON on all pods
+        requestsPerMinute = 60;
         cryptoRatioPercent = 2;
         cryptoTaskImpactMs = 16;
         burstTaskCount = 4;
-        rateSlider.value = 12000;
+        rateSlider.value = 60;
         cryptoSlider.value = 2;
         impactSlider.value = 16;
         burstSlider.value = 4;
@@ -2235,9 +2258,9 @@
           }
         });
         updateSliderLabels();
-        storyDesc.innerHTML = '<strong>Baseline (12,000 req/min, 2% Crypto):</strong> Fleet runs completely healthy. Single 16ms tasks have minimal impact (~18ms lag &lt; 42ms limit) and drain in ~200ms. 0% shed, 0% error rate.';
+        storyDesc.innerHTML = '<strong>Baseline (60 req/min, 2% Crypto):</strong> Fleet runs completely healthy at 1 req/sec (~1 request every 6s per pod). Single 16ms tasks have minimal impact (~18ms lag &lt; 42ms limit) and drain in ~200ms. 0% shed, 0% error rate.';
         unspikeAllPods();
-        updateTicker('🟢 Normal 12,000 req/min baseline restored across all 6 container pods. Zero compounding.');
+        updateTicker('🟢 Normal 60 req/min baseline restored across all 6 container pods (~1 req/s fleet-wide). Zero compounding.');
       } else if (step === 2) {
         // Compounded Task Burst: 16,000 req/min, 10% crypto, all protected
         requestsPerMinute = 16000;
@@ -2341,7 +2364,7 @@
     window.modifyTraffic = function(factor) {
       const oldRate = requestsPerMinute;
       let newRate = Math.round(requestsPerMinute * factor);
-      newRate = Math.max(3000, Math.min(500000, newRate));
+      newRate = Math.max(10, Math.min(500000, newRate));
       requestsPerMinute = newRate;
 
       const rateSlider = document.getElementById('rateSlider');
@@ -2412,7 +2435,7 @@
               autoStepDirection = -1;
             }
           } else {
-            if (requestsPerMinute <= 6000) {
+            if (requestsPerMinute <= 30) {
               window.modifyTraffic(1.5);
               autoStepDirection = -1;
             } else {
@@ -2516,10 +2539,9 @@
     let dispatchTimer = null;
     function restartDispatcher() {
       if (dispatchTimer) clearInterval(dispatchTimer);
-      // Map requestsPerMinute to realistic animation packet dispatch
-      const rps = requestsPerMinute / 60;
-      // Visual scale factor so browser doesn't choke on packets:
-      const msPerPacket = Math.max(20, 1000 / (rps / 6));
+      // At 60 req/min, dispatch 1 packet every 1,000ms (1 request per second across the fleet).
+      // Scale smoothly with rate; clamp at 20ms (50 packets/sec) to keep canvas 60fps smooth under high load.
+      const msPerPacket = Math.max(20, Math.round(60000 / requestsPerMinute));
       dispatchTimer = setInterval(dispatchIncomingRequest, msPerPacket);
     }
 

@@ -1,39 +1,56 @@
-'use strict'
-
+import { monitorEventLoopDelay } from 'node:perf_hooks'
 import express from './lib/express.js'
 import http from './lib/http.js'
 import koa from './lib/koa.js'
+import { nativeOverloadProtection, createNativeOverloadProtection } from './lib/native.js'
 
 const frameworks = {
   express,
   http,
-  koa
+  koa,
+  native: (opts) => createNativeOverloadProtection(opts)
 }
 
 const defaults = {
   production: process.env.NODE_ENV === 'production',
   errorPropagationMode: false,
-  clientRetrySecs: 1,
+  clientRetrySecs: 5,
   sampleInterval: 5,
+  resolution: 5,
   maxEventLoopDelay: 42,
+  maxEventLoopDelayMs: 42,
   maxHeapUsedBytes: 0,
   maxRssBytes: 0,
   logging: false,
   logStatsOnReq: false
 }
 
+export { nativeOverloadProtection, createNativeOverloadProtection }
+
 export default function protect (framework, opts) {
-  opts = Object.assign({}, defaults, opts)
+  if (typeof framework === 'object' && framework !== null) {
+    opts = framework
+    framework = 'native'
+  }
   if (typeof framework === 'undefined') {
     throw Error('Please specify a framework')
   }
+
+  opts = Object.assign({}, defaults, opts)
+
   if (!(framework in frameworks)) {
     throw Error(opts.integrate + ' not supported.')
   }
 
+  if (framework === 'native') {
+    return frameworks.native(opts)
+  }
+
   const loopDelayThreshold = typeof opts.eventLoopDelay === 'number'
     ? opts.eventLoopDelay
-    : opts.maxEventLoopDelay
+    : (typeof opts.maxEventLoopDelayMs === 'number' && opts.maxEventLoopDelayMs !== defaults.maxEventLoopDelayMs
+        ? opts.maxEventLoopDelayMs
+        : opts.maxEventLoopDelay)
 
   if (opts.maxRssBytes <= 0 && opts.maxHeapUsedBytes <= 0 && loopDelayThreshold <= 0) {
     throw Error('At least one threshold (eventLoopDelay, maxHeapUsedBytes, maxRssBytes) should be above 0')
@@ -42,10 +59,19 @@ export default function protect (framework, opts) {
     throw Error('logStatsOnReq cannot be enabled unless logging is also enabled')
   }
 
-  const maxEventLoopDelay = opts.maxEventLoopDelay
+  const maxEventLoopDelay = loopDelayThreshold
   const maxHeapUsedBytes = opts.maxHeapUsedBytes
   const maxRssBytes = opts.maxRssBytes
-  const sampleInterval = opts.sampleInterval
+  const sampleInterval = typeof opts.resolution === 'number' && opts.resolution !== defaults.resolution
+    ? opts.resolution
+    : opts.sampleInterval
+
+  let eventLoopMonitor
+  if (maxEventLoopDelay > 0 && typeof monitorEventLoopDelay === 'function') {
+    const res = sampleInterval > 0 ? sampleInterval : 5
+    eventLoopMonitor = monitorEventLoopDelay({ resolution: res })
+    eventLoopMonitor.enable()
+  }
 
   const profiler = {
     overload: false,
@@ -54,8 +80,10 @@ export default function protect (framework, opts) {
     rssOverload: false,
     eventLoopDelay: 0,
     maxEventLoopDelay,
+    maxEventLoopDelayMs: maxEventLoopDelay,
     maxHeapUsedBytes,
     maxRssBytes,
+    eventLoopMonitor,
     stop
   }
 
@@ -67,7 +95,12 @@ export default function protect (framework, opts) {
 
     if (maxEventLoopDelay > 0) {
       const deltaMs = Number(now - last) / 1e6
-      const delay = Math.max(0, deltaMs - sampleInterval)
+      const timerDelay = Math.max(0, deltaMs - sampleInterval)
+      let nativeLagMs = 0
+      if (eventLoopMonitor) {
+        nativeLagMs = eventLoopMonitor.percentile(99) / 1e6
+      }
+      const delay = Math.max(nativeLagMs, timerDelay)
       profiler.eventLoopDelay = delay
       profiler.eventLoopOverload = delay > maxEventLoopDelay
     }
@@ -105,6 +138,9 @@ export default function protect (framework, opts) {
   return integrate
 
   function stop () {
+    if (eventLoopMonitor) eventLoopMonitor.disable()
     if (timer) clearInterval(timer)
   }
 }
+protect.nativeOverloadProtection = nativeOverloadProtection
+protect.createNativeOverloadProtection = createNativeOverloadProtection
