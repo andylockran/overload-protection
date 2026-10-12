@@ -5,9 +5,11 @@ High-performance load detection and automated shedding for Node.js microservices
 [![Build Status](https://travis-ci.org/davidmarkclements/overload-protection.svg?branch=master)](https://travis-ci.org/davidmarkclements/overload-protection)
 [![Coverage Status](https://coveralls.io/repos/github/davidmarkclements/overload-protection/badge.svg)](https://coveralls.io/github/davidmarkclements/overload-protection)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Site-38bdf8?logo=github)](https://andylockran.github.io/overload-protection/)
 
-> 🚀 **Interactive Tools**:  
-> 📽️ **[Interactive Presentation Deck](demos/presentation.html)** · 🎮 **[Live 6-Pod Fleet Simulation](demos/visualization.html)** · 📖 **[Architecture Deep-Dive](docs/architecture-and-why-it-matters.md)**
+> 🌐 **Live Site & Interactive Tools**:  
+> 👉 **[https://andylockran.github.io/overload-protection/](https://andylockran.github.io/overload-protection/)**  
+> 📽️ **[Interactive Presentation Deck](https://andylockran.github.io/overload-protection/demos/presentation.html)** · 🎮 **[Live 6-Pod Fleet Simulation](https://andylockran.github.io/overload-protection/demos/visualization.html)** · 📖 **[Architecture Deep-Dive](https://andylockran.github.io/overload-protection/docs/architecture-and-why-it-matters.html)**
 
 ---
 
@@ -112,7 +114,7 @@ http.createServer((req, res) => {
 
 An interactive visual simulation of a **6-container Node.js cluster** running under a cloud load balancer is included in this repository:
 
-👉 **[Open `demos/visualization.html`](demos/visualization.html)** directly in your browser or run locally:
+👉 **[Open Live 6-Pod Fleet Simulation](https://andylockran.github.io/overload-protection/demos/visualization.html)** directly in your browser or run locally:
 
 ```bash
 npx serve .
@@ -134,11 +136,11 @@ Explore the deep-dive guides for full architectural, operational, and API detail
 
 | Document | Topics Covered |
 | :--- | :--- |
-| 📽️ **[Interactive Presentation & Slides](docs/presentation.md)** | Step-by-step presentation: nightclub bouncer intuition, event loop internals, problem manifestation, 2017 hack, and 2026 native simplification. |
-| 📖 **[Architecture & Why Overload Protection Matters](docs/architecture-and-why-it-matters.md)** | Modern 2026 container challenges, Linux CFS throttling, Little's Law queue cliffs, microservice retry storms, ALB ingress behavior. |
-| ⚙️ **[Event Loop Delay Detection & Internals](docs/event-loop-detection-and-internals.md)** | `node:perf_hooks` native C++ histogram engine, p99 nanosecond calculations, V8 Used Heap vs Resident Set Size (RSS). |
-| 📚 **[Full API & Configuration Reference](docs/api-reference.md)** | Complete options reference, `nativeOverloadProtection`, `protect(framework)`, error propagation mode, JSON response schema, and lifecycle management. |
-| 📊 **[Testing, Benchmarks & Timing Strategy](docs/testing-and-benchmarks.md)** | Vitest test suite architecture (82 passing tests), `setImmediate` timing strategy, V8 JIT CPU load evolution, and benchmark results. |
+| 📽️ **[Interactive Presentation Deck](https://andylockran.github.io/overload-protection/demos/presentation.html)** | Step-by-step presentation: nightclub bouncer intuition, event loop internals, problem manifestation, 2017 hack, and 2026 native simplification. ([Written Slides Guide](https://andylockran.github.io/overload-protection/docs/presentation.html)) |
+| 📖 **[Architecture & Why Overload Protection Matters](https://andylockran.github.io/overload-protection/docs/architecture-and-why-it-matters.html)** | Modern 2026 container challenges, Linux CFS throttling, Little's Law queue cliffs, microservice retry storms, ALB ingress behavior. |
+| ⚙️ **[Event Loop Delay Detection & Internals](https://andylockran.github.io/overload-protection/docs/event-loop-detection-and-internals.html)** | `node:perf_hooks` native C++ histogram engine, p99 nanosecond calculations, V8 Used Heap vs Resident Set Size (RSS). |
+| 📚 **[Full API & Configuration Reference](https://andylockran.github.io/overload-protection/docs/api-reference.html)** | Complete options reference, `nativeOverloadProtection`, `protect(framework)`, error propagation mode, JSON response schema, and lifecycle management. |
+| 📊 **[Testing, Benchmarks & Timing Strategy](https://andylockran.github.io/overload-protection/docs/testing-and-benchmarks.html)** | Vitest test suite architecture (82 passing tests), `setImmediate` timing strategy, V8 JIT CPU load evolution, and benchmark results. |
 
 ---
 

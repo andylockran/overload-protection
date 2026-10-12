@@ -122,7 +122,7 @@ sequenceDiagram
 ## Interactive Simulation
 
 To see these principles visualized in real time across a 6-container Node.js cluster:
-👉 **[Open `demos/visualization.html`](../demos/visualization.html)**
+👉 **[Open Live Fleet Simulation](https://andylockran.github.io/overload-protection/demos/visualization.html)**
 
 It simulates:
 - Real-time rotating event loop wheels synchronized to container loop lag.

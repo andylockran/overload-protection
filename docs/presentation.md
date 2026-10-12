@@ -4,7 +4,7 @@ An interactive, visual walkthrough explaining the single-threaded Node.js event 
 
 > 📽️ **Interactive Slide Deck Available**:
 > You can present or click through the interactive slide deck directly in your browser:
-> 👉 **[Launch Interactive Slide Deck (Fullscreen)](../demos/presentation.html)**
+> 👉 **[Launch Interactive Slide Deck (Fullscreen)](https://andylockran.github.io/overload-protection/demos/presentation.html)** · **[Live 6-Pod Fleet Simulation](https://andylockran.github.io/overload-protection/demos/visualization.html)**
 
 ---
 
@@ -151,5 +151,5 @@ app.use(nativeOverloadProtection) // 42ms limit, Retry-After: 5s
 
 ## Interactive Demos
 
-- 📽️ **[Launch Interactive Presentation Deck](../demos/presentation.html)**
-- 🎮 **[Launch 6-Pod Fleet Simulation](../demos/visualization.html)**
+- 📽️ **[Launch Interactive Presentation Deck](https://andylockran.github.io/overload-protection/demos/presentation.html)**
+- 🎮 **[Launch 6-Pod Fleet Simulation](https://andylockran.github.io/overload-protection/demos/visualization.html)**

@@ -111,11 +111,19 @@
     {{ content }}
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
     mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
     document.addEventListener('DOMContentLoaded', async () => {
+      const mdContainer = document.querySelector('[data-markdown="true"]');
+      if (mdContainer && window.marked) {
+        const rawMarkdown = mdContainer.textContent;
+        const main = mdContainer.closest('.markdown-body') || mdContainer.parentElement;
+        main.innerHTML = marked.parse(rawMarkdown);
+      }
+
       const codeBlocks = document.querySelectorAll('pre code.language-mermaid, pre.mermaid, code.language-mermaid');
       for (const block of codeBlocks) {
         const pre = block.closest('pre') || block;
