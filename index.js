@@ -67,7 +67,7 @@ export default function protect (framework, opts) {
 
     if (maxEventLoopDelay > 0) {
       const deltaMs = Number(now - last) / 1e6
-      const delay = Math.max(0, Math.round(deltaMs - sampleInterval))
+      const delay = Math.max(0, deltaMs - sampleInterval)
       profiler.eventLoopDelay = delay
       profiler.eventLoopOverload = delay > maxEventLoopDelay
     }

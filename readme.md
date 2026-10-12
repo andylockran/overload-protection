@@ -27,7 +27,7 @@ Daniel Khans article at <https://www.dynatrace.com/blog/understanding-garbage-co
 
 ## Interactive Visualization & Why Overload Protection Matters in 2026
 
-An interactive D3.js visualization of the Node.js event loop and load shedding mechanism is included in this repository:
+An interactive visual simulation of a **6-container Node.js fleet** running under a cloud ingress load balancer is included in this repository:
 👉 **[Open `demos/visualization.html`](demos/visualization.html)** directly in your browser or serve it locally:
 
 ```bash
@@ -35,21 +35,27 @@ npx serve .
 # Open http://localhost:3000/demos/visualization.html
 ```
 
+It visualizes in real time:
+- A fleet of 6 Node.js containers with individual animated spinning event loop wheels.
+- Real-time event loop lag telemetry across the entire cluster.
+- **Strategy 4 in action**: Heavy cryptographic session spikes trigger instant `503 Service Unavailable` with `Retry-After: 1s` load shedding. The 503 is returned to the client, which backs off and retries, while the load balancer routes the retry to an adjacent healthy sibling container, preventing queuing cliffs and memory bloat.
+
 ```mermaid
 flowchart TD
-    Req([Incoming HTTP Requests]) --> Gate{Overload Gatekeeper<br/>profiler.overload?}
+    Req(["Incoming HTTP Requests"]) --> Gate{"Overload Gatekeeper<br/>(profiler.overload)"}
     
-    subgraph EventLoop [Single-Threaded Node.js Event Loop]
-        Timer[Sampling Timer<br/>process.hrtime.bigint] -.-> Metrics[(Event Loop Delay<br/>Heap & RSS Usage)]
+    subgraph EventLoop ["Single-Threaded Node.js Event Loop"]
+        Timer["Sampling Timer<br/>process.hrtime.bigint()"] -.-> Metrics[("Event Loop Delay<br/>Heap & RSS Usage")]
         Metrics --> Gate
-        Worker[CPU Work / JSON / Crypto / GC] -.->|Thread Contention| Timer
+        Worker["CPU Work / JSON / Crypto / GC"] -.->|"Thread Contention"| Timer
     end
 
-    Gate -->|No: Delay <= 42ms| Accept[Process Request Normally<br/>HTTP 200 OK]
-    Gate -->|Yes: Delay > 42ms| Shed[Shed Immediately<br/>HTTP 503 Service Unavailable<br/>Retry-After: 1s]
+    Gate -->|"No: Delay within limit (&le; 42ms)"| Accept["Process Request Normally<br/>HTTP 200 OK"]
+    Gate -->|"Yes: Delay exceeds limit (> 42ms)"| Shed["Shed Immediately<br/>HTTP 503 Service Unavailable<br/>Retry-After: 1s"]
 
-    Accept --> Done([Response Sent])
-    Shed --> Retry([Upstream Proxy Retries Sibling])
+    Accept --> Done(["Response 200 OK Sent"])
+    Shed --> Retry(["503 Returned to Client<br/>(Retry-After: 1s)"])
+    Retry -.-> ClientBackoff(["Client Retries -> ALB Routes to Sibling"])
 
     style Gate fill:#58a6ff,stroke:#0969da,color:#ffffff
     style Accept fill:#2da44e,stroke:#1a7f37,color:#ffffff
@@ -92,7 +98,7 @@ When a Node.js server attempts to process 100% of incoming requests under satura
 
 #### 4. Microservice Retry Storms & Circuit Breaking
 In high-density microservice architectures, when a downstream Node.js service becomes slow, upstream clients begin timing out and initiating retries. This creates a vicious **retry storm** that rapidly exhausts connection pools and brings down entire service graphs.
-- Rejecting requests immediately at the process boundary with `503` and a `Retry-After: 1` header signals to upstream proxies (Envoy, AWS ALB, NGINX) to fail fast and retry against healthy sibling containers, containing the blast radius.
+- Rejecting requests immediately at the process boundary with `503` and a `Retry-After: 1` header signals to the client (and retrying proxies) to fail fast and back off, allowing subsequent client retries to distribute across healthy sibling containers without queuing cliffs or memory bloat.
 
 ---
 
@@ -401,22 +407,22 @@ Event loop delay detection is based on measuring the actual delay between sampli
 ```mermaid
 sequenceDiagram
     participant App as Application Code
-    participant Timer as Sample Timer (5ms)
+    participant Timer as Sampling Timer (5ms)
     participant Loop as Event Loop
     participant Monitor as Native Loop Monitor
     
-    Note over Timer,Monitor: Normal Operation (no delay)
-    Timer->>Loop: Schedule next sample
-    Loop->>Monitor: Sample at 5ms ✓
-    Note over Monitor: Delay: ~0ms (normal)
+    Note over Timer,Loop: Normal Operation (No Lag)
+    Timer->>Loop: Schedule next sample tick
+    Loop->>Monitor: Sample fires on time (5ms)
+    Note over Monitor: Measured Delay: ~0ms (Healthy)
     
-    Note over Timer,Monitor: Heavy CPU Load Scenario
-    App->>Loop: Start CPU-intensive work
-    Note over Loop: Blocked for 150ms
-    Timer->>Loop: Try to schedule (blocked)
-    App->>Loop: Finish CPU work
-    Loop->>Monitor: Sample fires after unblock (155ms elapsed)
-    Note over Monitor: Delay: 150ms (OVERLOAD)
+    Note over App,Loop: Heavy Synchronous CPU Work (Crypto / JSON)
+    App->>Loop: Execute blocking CPU task
+    Note over Loop: Event loop frozen for 150ms
+    Timer->>Loop: Tick overdue (blocked in queue)
+    App->>Loop: Task completes and unblocks thread
+    Loop->>Monitor: Delayed sample executes (155ms elapsed)
+    Note over Monitor: Measured Delay: 150ms (Overload Detected)
     Monitor->>Monitor: Set eventLoopOverload = true
 ```
 
@@ -453,13 +459,13 @@ setImmediate(() => {
 
 ```mermaid
 flowchart LR
-    A[Start CPU Work] --> B[Block Event Loop<br/>~150ms]
-    B --> C[Complete Work]
-    C --> D[setImmediate<br/>Queue Check]
-    D --> E[Read Delay]
-    E --> F{Delay > 10ms?}
-    F -->|Yes| G[✓ Test Passes]
-    F -->|No| H[✗ Test Fails]
+    A["Start CPU Work"] --> B["Block Event Loop<br/>(~150ms)"]
+    B --> C["Complete Work"]
+    C --> D["setImmediate<br/>Queue Check"]
+    D --> E["Read Delay"]
+    E --> F{"Delay > 10ms?"}
+    F -->|"Yes"| G["Pass: Delay Recorded"]
+    F -->|"No"| H["Fail: Below Threshold"]
     
     style B fill:#ff9999
     style G fill:#99ff99
@@ -491,20 +497,20 @@ setImmediate(() => {
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Normal: Initialize<br/>(eventLoopOverload = false)
-    Normal --> Overload: Delay > maxEventLoopDelay<br/>(e.g., 150ms > 10ms)
-    Overload --> Normal: Delay < maxEventLoopDelay<br/>(system recovers)
+    [*] --> Normal: Initialize (eventLoopOverload = false)
+    Normal --> Overload: Delay exceeds maxEventLoopDelay (e.g. 150ms > 10ms)
+    Overload --> Normal: Delay falls below maxEventLoopDelay (system recovers)
     Overload --> [*]: instance.stop()
     Normal --> [*]: instance.stop()
     
     note right of Normal
         Event loop processing normally
-        Requests handled normally
+        Requests handled with 200 OK
     end note
     
     note right of Overload
-        503 responses sent
-        Load shedding active
+        503 responses sent immediately
+        Load shedding active (<0.05ms)
     end note
 ```
 
@@ -538,22 +544,23 @@ setImmediate(() => {
 **Recovery Timeline:**
 
 ```mermaid
-gantt
-    title Event Loop Load and Recovery Timeline
-    dateFormat X
-    axisFormat %Lms
+flowchart LR
+    T1["Phase 1: Normal<br/>(Delay: ~0ms, Flag: false)"] --> T2["Phase 2: CPU Stall<br/>(Event loop blocked ~50ms)"]
+    T2 --> T3["Phase 3: Overload Detected<br/>(Delay: 50ms, Flag: true)"]
+    T3 --> T4["Phase 4: Recovered<br/>(Delay: ~0ms, Flag: false)"]
     
-    section Event Loop State
-    Normal Operation           :done, 0, 50
-    Brief CPU Load (~50ms)     :active, 50, 100
-    Recovery Period            :crit, 100, 150
-    Back to Normal             :done, 150, 200
-    
-    section eventLoopOverload Flag
-    false                      :done, 0, 60
-    true (briefly)             :active, 60, 120
-    false (recovered)          :done, 120, 200
+    style T1 fill:#d1fae5,stroke:#059669
+    style T2 fill:#fee2e2,stroke:#dc2626
+    style T3 fill:#fef3c7,stroke:#d97706
+    style T4 fill:#d1fae5,stroke:#059669
 ```
+
+| Timeline Phase | Event Loop State | Measured Lag | `eventLoopOverload` Flag | System Action |
+|:---|:---|:---:|:---:|:---|
+| **0ms – 50ms** | Normal operation | ~0ms | `false` | Accept requests (200 OK) |
+| **50ms – 100ms** | CPU work blocks event loop | N/A (frozen) | `false` | Main thread busy with task |
+| **100ms – 150ms** | Delayed sample executes | ~50ms | `true` | Shed requests (503 Service Unavailable) |
+| **150ms+** | Work completed, timers normalize | ~0ms | `false` | Resume normal operation automatically |
 
 **What's Being Tested:**
 - The system doesn't get "stuck" in overload state
@@ -584,21 +591,21 @@ setImmediate(() => {
 
 ```mermaid
 flowchart TD
-    A[Configure Protection] --> B{maxEventLoopDelay > 0?}
-    B -->|Yes| C[Enable Loop Monitoring]
-    B -->|No| D[Skip Loop Monitoring]
+    A["Configure Protection"] --> B{"maxEventLoopDelay > 0?"}
+    B -->|"Yes"| C["Enable Loop Monitoring"]
+    B -->|"No"| D["Skip Loop Monitoring"]
     
-    C --> E[Sample every<br/>sampleInterval ms]
-    D --> F[No event loop<br/>monitoring]
+    C --> E["Sample every<br/>sampleInterval ms"]
+    D --> F["No event loop<br/>monitoring"]
     
-    E --> G{Delay > Threshold?}
-    G -->|Yes| H[eventLoopOverload = true<br/>Send 503]
-    G -->|No| I[eventLoopOverload = false<br/>Process request]
+    E --> G{"Delay > Threshold?"}
+    G -->|"Yes"| H["eventLoopOverload = true<br/>Send 503"]
+    G -->|"No"| I["eventLoopOverload = false<br/>Process request"]
     
-    F --> J[eventLoopOverload<br/>always false]
-    J --> K{Check other<br/>thresholds}
-    K -->|Heap/RSS exceeded| H
-    K -->|All OK| I
+    F --> J["eventLoopOverload<br/>always false"]
+    J --> K{"Check other thresholds"}
+    K -->|"Heap/RSS exceeded"| H
+    K -->|"All OK"| I
     
     style D fill:#ccccff
     style F fill:#ccccff
@@ -621,24 +628,24 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Check All Thresholds] --> B{eventLoopOverload?}
-    A --> C{heapUsedOverload?}
-    A --> D{rssOverload?}
+    A["Check All Thresholds"] --> B{"eventLoopOverload?"}
+    A --> C{"heapUsedOverload?"}
+    A --> D{"rssOverload?"}
     
-    B -->|true| E[overload = true]
-    C -->|true| E
-    D -->|true| E
+    B -->|"true"| E["overload = true"]
+    C -->|"true"| E
+    D -->|"true"| E
     
-    B -->|false| F{Check Next}
-    C -->|false| F
-    D -->|false| F
+    B -->|"false"| F{"Check Next"}
+    C -->|"false"| F
+    D -->|"false"| F
     
-    F --> G{All false?}
-    G -->|Yes| H[overload = false]
-    G -->|No| E
+    F --> G{"All false?"}
+    G -->|"Yes"| H["overload = false"]
+    G -->|"No"| E
     
-    E --> I[Send 503 Response]
-    H --> J[Process Request Normally]
+    E --> I["Send 503 Response"]
+    H --> J["Process Request Normally"]
     
     style E fill:#ff9999
     style H fill:#99ff99
@@ -718,14 +725,13 @@ setTimeout(function () {
 Over the past 10 years, V8 (Node.js's JavaScript engine) has undergone massive performance improvements:
 
 ```mermaid
-timeline
-    title JavaScript Engine Evolution (2015-2025)
-    2015 : Original overload-protection tests<br/>V8 4.5 - Crankshaft JIT<br/>Math.sqrt sufficient to block
-    2017 : V8 5.9 - TurboFan replaces Crankshaft<br/>~2x performance improvement
-    2019 : V8 7.6 - Lazy compilation<br/>Improved JIT warm-up
-    2021 : V8 9.0 - Sparkplug compiler<br/>Faster startup and optimization
-    2023 : V8 11.0 - Maglev mid-tier compiler<br/>Better optimization pipeline
-    2025 : V8 12.9+ - Tests need heavy CPU<br/>Simple loops too fast to block
+flowchart LR
+    V2015["2015: V8 Crankshaft<br/>Light math loops block"] --> V2017["2017: V8 TurboFan<br/>JIT compiles math near-native"]
+    V2017 --> V2021["2021: V8 Sparkplug<br/>Faster JIT compilation tier"]
+    V2021 --> V2025["2025+: V8 Maglev & Turboshaft<br/>Requires bitwise/crypto loops to block"]
+    
+    style V2015 fill:#e0f2fe,stroke:#0284c7
+    style V2025 fill:#ede9fe,stroke:#7c3aed
 ```
 
 **Key optimizations that affected tests:**
@@ -825,13 +831,13 @@ hash = hash & hash                    // Force computation
 This evolution demonstrates an important principle in performance testing:
 
 ```mermaid
-graph LR
-    A[Hardware/Runtime<br/>Improves] --> B[Tests Run Faster]
-    B --> C{Test Measures<br/>Real Behavior?}
-    C -->|Yes - Unit Tests| D[Update CPU Load<br/>to Match Intent]
-    C -->|No - Integration| E[Mock/Control<br/>Conditions]
+flowchart LR
+    A["Hardware/Runtime<br/>Improves"] --> B["Tests Run Faster"]
+    B --> C{"Test Measures<br/>Real Behavior?"}
+    C -->|"Yes: Unit Tests"| D["Update CPU Load<br/>to Match Intent"]
+    C -->|"No: Integration"| E["Mock/Control<br/>Conditions"]
     
-    D --> F[Reliable Tests<br/>on Modern Systems]
+    D --> F["Reliable Tests<br/>on Modern Systems"]
     E --> F
     
     style A fill:#e1f5ff
@@ -859,14 +865,14 @@ The test suite makes an important distinction:
 
 ```mermaid
 flowchart LR
-    A[Integration Test] --> B[Mock Memory]
-    A --> C[HTTP Request]
+    A["Integration Test"] --> B["Mock Memory"]
+    A --> C["HTTP Request"]
     
-    B --> D[Deterministic:<br/>Always triggers<br/>when mocked high]
-    C --> E[Non-deterministic:<br/>Timing varies,<br/>event loop async]
+    B --> D["Deterministic:<br/>Always triggers<br/>when mocked high"]
+    C --> E["Non-deterministic:<br/>Timing varies,<br/>event loop async"]
     
-    D --> F[✓ Reliable Test]
-    E --> G[✗ Flaky Test]
+    D --> F["Reliable Test (Pass)"]
+    E --> G["Flaky Test Risk"]
     
     style D fill:#99ff99
     style E fill:#ff9999
@@ -907,18 +913,21 @@ In modern cloud deployments (Kubernetes, AWS ECS/Fargate, Google Cloud Run, AWS 
 
 ```mermaid
 flowchart TD
-    Client[Incoming Requests] --> LB[Ingress / Cloud Load Balancer<br/>e.g. AWS ALB, Envoy, NGINX]
+    Client["Client (Browser / App / SDK)"] -->|"Initial Request"| LB["Cloud Load Balancer (e.g. AWS ALB)"]
     
-    subgraph Fleet [Identical Container Fleet]
-        C1[Container 1<br/>Healthy]
-        C2[Container 2<br/>Heavy Event Loop Load]
-        C3[Container 3<br/>Healthy]
+    subgraph Fleet ["Isolated Container Fleet"]
+        C1["Container 1<br/>Healthy"]
+        C2["Container 2<br/>Heavy Event Loop Load"]
+        C3["Container 3<br/>Healthy"]
     end
     
-    LB -->|Route Request| C2
-    C2 -->|503 Service Unavailable<br/>Retry-After: 1| LB
-    LB -.->|Auto-retry against sibling| C1
-    LB -.->|Auto-retry against sibling| C3
+    LB -->|"Forward Request"| C2
+    C2 -->|"503 Service Unavailable<br/>Retry-After: 1s"| LB
+    LB -->|"503 Forwarded Directly to Client<br/>(ALB never retries requests)"| Client
+    
+    Client -.->|"Backoff & Retry"| LB
+    LB -.->|"Route Retry to Sibling"| C1
+    LB -.->|"Route Retry to Sibling"| C3
     
     style C2 fill:#ff9999,stroke:#ff0000
     style C1 fill:#99ff99
@@ -936,10 +945,12 @@ flowchart TD
    - If memory usage climbs uncontrolled, the container is killed by the OS kernel OOM killer or Kubernetes liveness probes fail, triggering container restart loops (`CrashLoopBackOff`).
    - Shedding incoming requests immediately with `503 Service Unavailable` shields the container, giving it CPU headroom to complete in-flight tasks and clear its queue.
 
-3. **Fleet Redistribution via Upstream Proxies**:
-   - Ingress proxies and service meshes (Envoy, AWS ALB, NGINX, Istio) sit in front of the fleet.
-   - When an overloaded container quickly returns `503`, modern load balancers configured with retry policies (`retry_on: "503"` or `retry_on: "connect-failure,refused-stream,5xx"`) automatically re-route the request to an adjacent, identical replica that has capacity.
-   - Even without automated proxy retries, the `Retry-After: 1` response instructs clients to back off briefly and retry against the load balancer DNS, balancing load across siblings rather than starving the struggling container.
+3. **Fleet Redistribution via Client Retries & Upstream Proxies**:
+   - Cloud load balancers like **AWS ALB do NOT retry application-level 503 responses**—the 503 is returned directly to the client.
+   - The `Retry-After: 1` header instructs the client (mobile app, browser, SDK, or upstream microservice) to back off briefly and retry.
+   - When the client retries, the ALB balances the retry across the target group to an adjacent healthy container that has capacity.
+   - (In advanced service mesh architectures like Envoy with `retry_on: "5xx"`, the mesh proxy can also perform automated retries on the client's behalf).
+   - Crucially, shedding in <0.05ms protects the single-threaded Node.js event loop from buffering requests during heavy synchronous operations (such as crypto session handshakes), preventing catastrophic out-of-memory (OOM) restarts.
 
 ---
 
