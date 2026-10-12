@@ -45,7 +45,7 @@ eventLoopMonitor.enable()
 1. **Zero Polling Overhead**:
    Unlike legacy JavaScript timers that wake the event loop and contend with application code, `monitorEventLoopDelay` is implemented in C++ using high-resolution monotonic clocks.
 2. **Nanosecond Precision**:
-   Delays are recorded in high-resolution nanosecond buckets. Converting to milliseconds is as simple as dividing by $10^6$ (`/ 1e6`).
+   Delays are recorded in high-resolution nanosecond buckets. Converting to milliseconds is as simple as dividing by 10⁶ (`/ 1e6`).
 3. **Statistical Robustness (p99)**:
    By tracking percentiles (`eventLoopMonitor.percentile(99)`), transient single-tick anomalies are smoothed out while genuine sustained overload is caught instantly.
 

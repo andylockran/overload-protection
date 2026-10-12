@@ -122,10 +122,10 @@ npx serve .
 ```
 
 ### What the Simulation Demonstrates
-- **Physical Event Loop Animation**: 6 animated rotating wheels dynamically synchronized to container loop lag ($5.2^\circ/\text{frame}$ when healthy, slowing to $2.8^\circ$ during crypto, and churning at $0.9^\circ$ during queue collapse without stopping).
+- **Physical Event Loop Animation**: 6 animated rotating wheels dynamically synchronized to container loop lag (5.2°/frame when healthy, slowing to 2.8° during crypto, and churning at 0.9° during queue collapse without stopping).
 - **The 4 Golden Signals**: Real-time fleet telemetry tracking Traffic (baseline 60 req/min up to 500,000 req/min), Latency (p95 & p99), Error Rate, and Saturation.
 - **Little's Law Live Capacity Planner**: Calculates exact container capacity needed for discreet user journeys (1 heavy cryptographic session creation + 8 lite transactions).
-- **Automated $\pm 50\%$/min Surge**: Simulates autoscaler provisioning lag and demonstrates how shedding prevents queue collapse.
+- **Automated ±50%/min Surge**: Simulates autoscaler provisioning lag and demonstrates how shedding prevents queue collapse.
 - **Cloud Ingress Behavior**: Confirms that cloud ALBs return 503 straight to the client without retrying, allowing clients to back off safely.
 
 ---
