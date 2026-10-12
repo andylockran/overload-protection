@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overload Protection: Visual Presentation</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card-bg: #111827;
+      --border: #1f293d;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --blue: #38bdf8;
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Presentation Bar */
+    .top-bar {
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--blue);
+      letter-spacing: -0.3px;
+    }
+
+    .slide-badge {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--blue);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: monospace;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: #374151;
+    }
+
+    .nav-btn.primary {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--blue);
+      border-color: rgba(56, 189, 248, 0.35);
+      font-weight: 600;
+    }
+
+    /* Main Deck Stage */
+    .deck-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Slide Content Typography */
+    .slide-tag {
+      display: inline-block;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--blue);
+      margin-bottom: 12px;
+    }
+
+    .slide-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.25;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .slide-subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    /* Grid Layouts inside slides */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 800px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .slide { padding: 24px; }
+      .slide-title { font-size: 24px; }
+    }
+
+    /* Info Cards */
+    .info-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .info-card.highlight {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.04);
+    }
+
+    .info-card.alert {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.04);
+    }
+
+    .info-card.success {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.04);
+    }
+
+    .card-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Code blocks */
+    pre {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 18px;
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+      font-size: 13px;
+      color: #e6edf3;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin-top: 16px;
+    }
+
+    code {
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+      color: var(--blue);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    /* Diagrams & Flows */
+    .flow-box {
+      background: #0f172a;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      flex: 1;
+      min-width: 140px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .flow-arrow {
+      color: var(--blue);
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      background: rgba(17, 24, 39, 0.95);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      bottom: 0;
+      z-index: 50;
+    }
+
+    .progress-bar-wrap {
+      flex: 1;
+      max-width: 400px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      margin: 0 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--blue);
+      width: 14.28%;
+      transition: width 0.25s ease-out;
+    }
+
+    .btn-control {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+
+    .btn-control:hover:not(:disabled) {
+      background: #374151;
+    }
+
+    .btn-control:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-control.primary {
+      background: var(--blue);
+      color: #0b0f17;
+      border-color: var(--blue);
+    }
+
+    .btn-control.primary:hover:not(:disabled) {
+      background: #7dd3fc;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      font-size: 14px;
+    }
+
+    .comparison-table th, .comparison-table td {
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="top-bar">
+    <div class="brand-group">
+      <span class="brand-title">⚡ overload-protection</span>
+      <span class="slide-badge" id="slideBadge">Slide 1 of 7</span>
+    </div>
+    <div class="top-actions">
+      <a href="../" class="nav-btn">📖 Documentation Hub</a>
+      <a href="visualization.html" class="nav-btn primary">🎮 Live Fleet Simulation</a>
+    </div>
+  </header>
+
+  <!-- Slide Stage -->
+  <main class="deck-container">
+
+    <!-- SLIDE 1: Title -->
+    <article class="slide active" id="slide-1">
+      <span class="slide-tag">Executive Presentation</span>
+      <h1 class="slide-title">Node.js Fleet Overload Protection</h1>
+      <p class="slide-subtitle">
+        How single-threaded event loop freezes cause catastrophic queue collapse in container fleets—and how native load shedding provides zero-overhead cluster survival.
+      </p>
+
+      <div class="grid-3">
+        <div class="info-card highlight">
+          <div class="card-icon">1️⃣</div>
+          <div class="card-title">The Core Problem</div>
+          <p class="card-desc">JavaScript is single-threaded. When synchronous tasks or CPU bursts stall the thread, queues explode exponentially.</p>
+        </div>
+        <div class="info-card alert">
+          <div class="card-icon">2️⃣</div>
+          <div class="card-title">Cloud Reality</div>
+          <p class="card-desc">ALBs never retry application 503s. Unprotected nodes stay frozen executing dead requests while memory balloons.</p>
+        </div>
+        <div class="info-card success">
+          <div class="card-icon">3️⃣</div>
+          <div class="card-title">The Native Solution</div>
+          <p class="card-desc">Using Node's native <code>perf_hooks.monitorEventLoopDelay</code> to shed load at p99 in <1ms with <code>Retry-After: 5s</code>.</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 2: In Simplest Terms -->
+    <article class="slide" id="slide-2">
+      <span class="slide-tag">Step 1: The Intuition</span>
+      <h2 class="slide-title">The Purpose in the Simplest Terms</h2>
+      <p class="slide-subtitle">
+        Think of your Node.js container like a packed nightclub with a single bartender and a velvet rope at the door.
+      </p>
+
+      <div class="grid-2">
+        <div class="info-card alert">
+          <div class="card-icon">🚫</div>
+          <div class="card-title">Without Overload Protection</div>
+          <p class="card-desc">
+            The bartender is pouring a complicated 30-step cocktail (a 16ms synchronous crypto hash). 
+            Meanwhile, 200 people push into the hallway. 
+            The room runs out of air, everyone waits 30 seconds, and the fire marshal shuts down the entire building (<code>OOMKilled</code> or liveness probe failure).
+          </p>
+        </div>
+        <div class="info-card success">
+          <div class="card-icon">🛡️</div>
+          <div class="card-title">With Overload Protection</div>
+          <p class="card-desc">
+            The bouncer at the door checks the bartender. The bartender is lagging!
+            The bouncer instantly tells new arrivals: 
+            <em>"We're full right now! Please wait 5 seconds before trying again (HTTP 503 + Retry-After: 5s)."</em>
+            The existing patrons finish their drinks, and the venue stays open and profitable!
+          </p>
+        </div>
+      </div>
+
+      <div class="flow-box">
+        <div class="flow-step">1. Request Hits Container</div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">2. Check Event Loop Lag</div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step" style="border-color: #10b981; color: #10b981;">If Lag ≤ 42ms: Serve (200 OK)</div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step" style="border-color: #ef4444; color: #ef4444;">If Lag > 42ms: Shed (503 Fast)</div>
+      </div>
+    </article>
+
+    <!-- SLIDE 3: The Event Loop -->
+    <article class="slide" id="slide-3">
+      <span class="slide-tag">Step 2: Architecture</span>
+      <h2 class="slide-title">How the Node.js Event Loop Works</h2>
+      <p class="slide-subtitle">
+        Node.js achieves massive scalability by offloading I/O to operating system kernels and handling callbacks sequentially on one thread.
+      </p>
+
+      <div class="grid-3">
+        <div class="info-card">
+          <div class="card-icon">⏳</div>
+          <div class="card-title">1. Timers Phase</div>
+          <p class="card-desc">Executes callbacks scheduled by <code>setTimeout()</code> and <code>setInterval()</code>.</p>
+        </div>
+        <div class="info-card">
+          <div class="card-icon">🌐</div>
+          <div class="card-title">2. Poll Phase (I/O)</div>
+          <p class="card-desc">Retrieves new I/O events, reads network sockets, and handles database responses.</p>
+        </div>
+        <div class="info-card">
+          <div class="card-icon">✅</div>
+          <div class="card-title">3. Check Phase</div>
+          <p class="card-desc">Executes <code>setImmediate()</code> callbacks immediately after poll completes.</p>
+        </div>
+      </div>
+
+      <div class="info-card highlight" style="margin-top: 24px;">
+        <div class="card-title">⚡ The Golden Rule of Node.js</div>
+        <p class="card-desc">
+          As long as callbacks return quickly (< 1ms), the event loop completes full rotations in ~2ms, effortlessly serving thousands of requests per second. 
+          <strong>Problems only start when synchronous code blocks the thread.</strong>
+        </p>
+      </div>
+    </article>
+
+    <!-- SLIDE 4: How the Problem Manifests -->
+    <article class="slide" id="slide-4">
+      <span class="slide-tag">Step 3: Root Cause Analysis</span>
+      <h2 class="slide-title">How the Problem Manifests: The Queue Cliff</h2>
+      <p class="slide-subtitle">
+        When heavy synchronous tasks execute, latency doesn't degrade linearly—it explodes exponentially.
+      </p>
+
+      <div class="grid-2">
+        <div class="info-card alert">
+          <div class="card-icon">💥</div>
+          <div class="card-title">Synchronous Blockers in 2026</div>
+          <ul style="margin-left: 20px; font-size: 14px; color: var(--text-muted); line-height: 1.8;">
+            <li><strong>Cryptographic Sessions</strong>: JWT signing, session token hashing (~16ms/op).</li>
+            <li><strong>Large JSON Parsing</strong>: Multi-megabyte LLM tool outputs (30–60ms).</li>
+            <li><strong>Schema Validation</strong>: Deep recursive Zod / TypeBox validation runs.</li>
+            <li><strong>Linux CFS Throttling</strong>: Kernel pauses containers exceeding CPU quotas.</li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <div class="card-icon">📐</div>
+          <div class="card-title">Little's Law (L = λ · W)</div>
+          <p class="card-desc">
+            As event loop utilization approaches 90%, queue depth and latency explode non-linearly.
+            <br><br>
+            If a node takes 30s to respond, <strong>the cloud load balancer (ALB) gives up and sends 503 to the client, but the Node.js server still keeps executing the dead work to completion!</strong>
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 5: The Original Solution -->
+    <article class="slide" id="slide-5">
+      <span class="slide-tag">Step 4: Historical Context</span>
+      <h2 class="slide-title">How the Original Library Solved It (2017)</h2>
+      <p class="slide-subtitle">
+        Back in Node.js v6/v8, there was no native API to measure event loop delay. David Mark Clements pioneered an ingenious timer-drift heuristic.
+      </p>
+
+      <div class="grid-2">
+        <div class="info-card highlight">
+          <div class="card-icon">💡</div>
+          <div class="card-title">The Interval Drift Heuristic</div>
+          <p class="card-desc">
+            Schedule an interval timer every 5ms using <code>setInterval</code>:
+          </p>
+          <pre><code>let last = process.hrtime.bigint()
+
+function check() {
+  const now = process.hrtime.bigint()
+  const deltaMs = Number(now - last) / 1e6
+  const delay = Math.max(0, deltaMs - 5)
+  if (delay > 42) {
+    profiler.overload = true
+  }
+  last = now
+}
+setInterval(check, 5).unref()</code></pre>
+        </div>
+        <div class="info-card">
+          <div class="card-icon">⚠️</div>
+          <div class="card-title">Historical Limitations</div>
+          <ul style="margin-left: 20px; font-size: 14px; color: var(--text-muted); line-height: 1.8;">
+            <li><strong>Active JS Overhead</strong>: Running a JS timer every 5ms constantly woke up the event loop.</li>
+            <li><strong>Coarse Resolution</strong>: Single-sample snapshots missed brief mid-interval spikes.</li>
+            <li><strong>Plaintext Responses</strong>: Only supported basic strings without structured JSON error payloads.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 6: The Modern Native Solution -->
+    <article class="slide" id="slide-6">
+      <span class="slide-tag">Step 5: Modern Architecture</span>
+      <h2 class="slide-title">How the Modern Solution Simplifies It (2026)</h2>
+      <p class="slide-subtitle">
+        Node.js core now provides native C++ histogram tracking via <code>perf_hooks.monitorEventLoopDelay</code>.
+      </p>
+
+      <div class="grid-2">
+        <div class="info-card success">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Zero-Overhead C++ Engine</div>
+          <p class="card-desc">
+            No JavaScript timers. Sampling happens in the native libuv runtime with sub-microsecond query time:
+          </p>
+          <pre><code>import { monitorEventLoopDelay } from 'perf_hooks'
+
+const monitor = monitorEventLoopDelay({ resolution: 5 })
+monitor.enable()
+
+// Instant O(1) p99 percentile query:
+const currentLagMs = monitor.percentile(99) / 1e6</code></pre>
+        </div>
+        <div class="info-card highlight">
+          <div class="card-icon">🚀</div>
+          <div class="card-title">3-Line Express Integration</div>
+          <p class="card-desc">
+            Mount as standard middleware with automated structured JSON responses:
+          </p>
+          <pre><code>import express from 'express'
+import { nativeOverloadProtection } from '@andylockran/overload-protection'
+
+const app = express()
+app.use(nativeOverloadProtection) // 42ms limit, Retry-After: 5s</code></pre>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 7: Summary & Live Demo -->
+    <article class="slide" id="slide-7">
+      <span class="slide-tag">Conclusion</span>
+      <h2 class="slide-title">Evolution Summary & Live Fleet Simulation</h2>
+      <p class="slide-subtitle">
+        A direct architectural comparison between the legacy approach and the 2026 native standard.
+      </p>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Metric / Capability</th>
+            <th>Legacy 2017 Library</th>
+            <th>Modern 2026 Native Solution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Measurement Engine</strong></td>
+            <td>Manual <code>setInterval</code> + <code>process.hrtime</code></td>
+            <td>Native C++ <code>perf_hooks.monitorEventLoopDelay</code></td>
+          </tr>
+          <tr>
+            <td><strong>Overhead</strong></td>
+            <td>Continuous JS timer polling</td>
+            <td>Zero JS wakeups (native histogram)</td>
+          </tr>
+          <tr>
+            <td><strong>Statistical Precision</strong></td>
+            <td>Single delta snapshot</td>
+            <td>p99 percentile over thousands of ticks</td>
+          </tr>
+          <tr>
+            <td><strong>Response Payload</strong></td>
+            <td>Plain text string</td>
+            <td>Structured JSON (<code>{ error, message, lagMs }</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Setup Code</strong></td>
+            <td>Multi-step factory + prototype setup</td>
+            <td>Direct 1-line middleware mounting</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top: 36px; text-align: center;">
+        <a href="visualization.html" class="btn-control primary" style="font-size: 16px; padding: 12px 28px; text-decoration: none;">
+          🎮 Launch Live 6-Pod Fleet Simulation ➔
+        </a>
+      </div>
+    </article>
+
+  </main>
+
+  <!-- Bottom Interactive Presentation Controls -->
+  <footer class="bottom-bar">
+    <button class="btn-control" id="btnPrev" onclick="navigateSlide(-1)">◀ Previous</button>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <button class="btn-control primary" id="btnNext" onclick="navigateSlide(1)">Next ▶</button>
+  </footer>
+
+  <script>
+    const TOTAL_SLIDES = 7;
+    let currentSlide = 1;
+
+    function updateSlide() {
+      // Toggle slides
+      document.querySelectorAll('.slide').forEach((el, idx) => {
+        el.classList.toggle('active', (idx + 1) === currentSlide);
+      });
+
+      // Update badge
+      document.getElementById('slideBadge').textContent = `Slide ${currentSlide} of ${TOTAL_SLIDES}`;
+
+      // Update progress bar
+      const progressPercent = (currentSlide / TOTAL_SLIDES) * 100;
+      document.getElementById('progressBar').style.width = `${progressPercent}%`;
+
+      // Update button states
+      document.getElementById('btnPrev').disabled = currentSlide === 1;
+      const btnNext = document.getElementById('btnNext');
+      if (currentSlide === TOTAL_SLIDES) {
+        btnNext.textContent = 'Restart ↺';
+      } else {
+        btnNext.textContent = 'Next ▶';
+      }
+    }
+
+    function navigateSlide(direction) {
+      if (direction === 1 && currentSlide === TOTAL_SLIDES) {
+        currentSlide = 1;
+      } else {
+        currentSlide = Math.max(1, Math.min(TOTAL_SLIDES, currentSlide + direction));
+      }
+      updateSlide();
+    }
+
+    // Keyboard navigation (Left, Right, Space)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        navigateSlide(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        navigateSlide(-1);
+      }
+    });
+
+    updateSlide();
+  </script>
+</body>
+</html>

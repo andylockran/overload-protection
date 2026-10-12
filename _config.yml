@@ -1,0 +1,36 @@
+title: overload-protection
+description: Automated load shedding and event loop guardrails for Node.js
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+
+include:
+  - demos
+  - docs
+
+exclude:
+  - node_modules
+  - coverage
+  - benchmarks
+  - html-report
+  - test
+  - scripts
+  - vitest.config.js
+  - package.json
+  - package-lock.json
+  - test-results.json
+  - pr-summary.md

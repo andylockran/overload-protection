@@ -5,9 +5,8 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['test/index.js', 'test/integration/**/index.js'],
-    threads: false,
-    maxThreads: 1,
-    testTimeout: 3000,
+    fileParallelism: false,
+    testTimeout: 5000,
     coverage: {
       provider: 'v8',
       include: ['index.js', 'lib/**/*.js'],

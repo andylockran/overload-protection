@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css">
+  <style>
+    :root {
+      color-scheme: dark light;
+    }
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    .site-nav {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 12px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .site-brand {
+      font-weight: 700;
+      font-size: 16px;
+      color: #58a6ff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      font-size: 14px;
+    }
+    .nav-links a {
+      color: #8b949e;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover {
+      color: #58a6ff;
+    }
+    .nav-btn {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-btn:hover {
+      background: rgba(56, 189, 248, 0.25);
+    }
+    .markdown-body {
+      box-sizing: border-box;
+      min-width: 200px;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 45px;
+      background: transparent !important;
+      color: #c9d1d9 !important;
+    }
+    @media (max-width: 767px) {
+      .markdown-body {
+        padding: 20px;
+      }
+    }
+    .mermaid {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="{{ site.baseurl }}/" class="site-brand">⚡ overload-protection</a>
+    <div class="nav-links">
+      <a href="{{ site.baseurl }}/">🏠 Home</a>
+      <a href="{{ site.baseurl }}/demos/presentation.html" class="nav-btn" style="background: rgba(168, 85, 247, 0.15); color: #c084fc !important; border-color: rgba(168, 85, 247, 0.35);">📽️ Presentation Deck</a>
+      <a href="{{ site.baseurl }}/demos/visualization.html" class="nav-btn">🎮 Live Fleet Simulation</a>
+      <a href="{{ site.baseurl }}/docs/architecture-and-why-it-matters.html">📖 Architecture</a>
+      <a href="{{ site.baseurl }}/docs/event-loop-detection-and-internals.html">⚙️ Internals</a>
+      <a href="{{ site.baseurl }}/docs/api-reference.html">📚 API Reference</a>
+      <a href="{{ site.baseurl }}/docs/testing-and-benchmarks.html">📊 Benchmarks</a>
+      <a href="https://github.com/andylockran/overload-protection" target="_blank" rel="noopener noreferrer">🐙 GitHub</a>
+    </div>
+  </nav>
+
+  <main class="markdown-body">
+    {{ content }}
+  </main>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const codeBlocks = document.querySelectorAll('pre code.language-mermaid, pre.mermaid, code.language-mermaid');
+      for (const block of codeBlocks) {
+        const pre = block.closest('pre') || block;
+        const container = document.createElement('div');
+        container.className = 'mermaid';
+        container.textContent = block.textContent;
+        pre.parentNode.replaceChild(container, pre);
+      }
+      await mermaid.run();
+    });
+  </script>
+</body>
+</html>

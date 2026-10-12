@@ -3,790 +3,2551 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Loop & Overload Protection Visualization</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <title>Node.js Fleet Overload Protection & SRE Golden Signals Dashboard</title>
   <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
+    :root {
+      --bg-dark: #06090e;
+      --bg-panel: #0d131d;
+      --bg-card: #121b29;
+      --bg-card-hover: #182436;
+      --border: #1e2c40;
+      --border-bright: #2d415d;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --color-primary: #38bdf8;
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --color-purple: #a855f7;
+      --color-gold: #fbbf24;
+      --color-cyan: #06b6d4;
     }
-    
-    #container {
-      max-width: 1400px;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1440px;
       margin: 0 auto;
     }
-    
-    h1 {
+
+    /* Header */
+    header {
+      margin-bottom: 24px;
       text-align: center;
-      color: #58a6ff;
+      position: relative;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--color-primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
       margin-bottom: 10px;
     }
-    
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 40%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
     .subtitle {
-      text-align: center;
-      color: #8b949e;
-      margin-bottom: 30px;
       font-size: 14px;
+      color: var(--text-muted);
+      max-width: 920px;
+      margin: 0 auto;
     }
-    
-    #controls {
-      text-align: center;
-      margin-bottom: 20px;
+
+    /* Google SRE 4 Golden Signals Dashboard */
+    .golden-signals-section {
+      margin-bottom: 22px;
     }
-    
-    button {
-      background: #238636;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      margin: 0 5px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    
-    button:hover {
-      background: #2ea043;
-    }
-    
-    button:disabled {
-      background: #21262d;
-      color: #484f58;
-      cursor: not-allowed;
-    }
-    
-    #visualization {
-      background: #161b22;
-      border-radius: 6px;
-      padding: 20px;
-      border: 1px solid #30363d;
-    }
-    
-    .request {
-      cursor: pointer;
-    }
-    
-    text {
-      pointer-events: none;
-      user-select: none;
-    }
-    
-    .legend {
-      margin-top: 20px;
-      padding: 15px;
-      background: #0d1117;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-    }
-    
-    .legend-item {
-      display: inline-block;
-      margin-right: 20px;
+
+    .section-title {
       font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #7dd3fc;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    
-    .legend-color {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      margin-right: 5px;
-      vertical-align: middle;
+
+    .golden-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
     }
-    
-    .explanation {
-      margin-top: 20px;
-      padding: 15px;
-      background: #0d1117;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      line-height: 1.6;
+
+    @media (max-width: 1024px) {
+      .golden-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    
-    .explanation h3 {
-      color: #58a6ff;
-      margin-top: 0;
+    @media (max-width: 640px) {
+      .golden-grid { grid-template-columns: 1fr; }
     }
-    
-    .code {
-      background: #161b22;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      color: #7ee787;
+
+    .signal-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.3s;
     }
-    
-    .tooltip {
+
+    .signal-card::after {
+      content: '';
       position: absolute;
-      padding: 8px 12px;
-      background: #1c2128;
-      border: 1px solid #58a6ff;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--border-bright);
+    }
+
+    .signal-card.latency::after { background: var(--color-primary); }
+    .signal-card.traffic::after { background: var(--color-cyan); }
+    .signal-card.errors::after { background: var(--color-danger); }
+    .signal-card.saturation::after { background: var(--color-warning); }
+
+    .signal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .signal-name {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .signal-status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .pill-healthy { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pill-warn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .pill-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); }
+
+    .signal-main-metric {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .signal-val {
+      font-size: 26px;
+      font-weight: 800;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+    }
+
+    .signal-subtext {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .signal-dual {
+      display: flex;
+      gap: 16px;
+      align-items: baseline;
+    }
+
+    .signal-dual-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .signal-dual-item .label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .signal-dual-item .val {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'SF Mono', monospace;
+    }
+
+    /* Saturation Progress Bar */
+    .sat-bar-container {
+      height: 6px;
+      background: #1e293b;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .sat-bar-fill {
+      height: 100%;
+      background: #10b981;
+      width: 48%;
+      transition: width 0.3s, background-color 0.3s;
+    }
+
+    /* Little's Law Capacity Planner HUD */
+    .littles-law-panel {
+      background: linear-gradient(180deg, #0e1726 0%, #0a101d 100%);
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .littles-law-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8, #a855f7);
+    }
+
+    .ll-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .ll-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ll-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .ll-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 1024px) {
+      .ll-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .ll-grid { grid-template-columns: 1fr; }
+    }
+
+    .ll-stat-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ll-stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .ll-stat-val {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      color: #f8fafc;
+    }
+
+    .ll-stat-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* Rate Modification Controls (±50%/min) */
+    .step-controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #09111e;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .step-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-step {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      font-family: inherit;
+    }
+
+    .btn-surge {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+    .btn-surge:hover {
+      background: rgba(239, 68, 68, 0.35);
+      border-color: #f87171;
+    }
+
+    .btn-drop {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+    }
+    .btn-drop:hover {
+      background: rgba(16, 185, 129, 0.35);
+      border-color: #34d399;
+    }
+
+    .btn-auto-step {
+      background: #1e293b;
+      border-color: #475569;
+      color: #cbd5e1;
+    }
+    .btn-auto-step.active {
+      background: rgba(168, 85, 247, 0.25);
+      border-color: #c084fc;
+      color: #e9d5ff;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+    }
+
+    .auto-timer-badge {
+      font-size: 11px;
+      font-family: 'SF Mono', monospace;
+      color: #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Story / Walkthrough Bar */
+    .story-banner {
+      background: linear-gradient(90deg, #101c2e 0%, #1c1836 100%);
+      border: 1px solid #323b6b;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .story-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+
+    .story-desc {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .story-steps {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .story-step-btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 6px 12px;
       border-radius: 6px;
       font-size: 12px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-      max-width: 300px;
-      z-index: 1000;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
     }
-    
-    .phase-indicator {
-      text-align: center;
-      padding: 10px;
+
+    .story-step-btn:hover { background: #334155; }
+    .story-step-btn.active {
+      background: #3b82f6;
+      border-color: #60a5fa;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Controls Panel */
+    .controls-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
       margin-bottom: 20px;
-      background: #161b22;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      font-size: 14px;
-      min-height: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
     }
-    
-    .phase-text {
-      color: #58a6ff;
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      background: #1e293b;
+      color: var(--text-main);
+      border: 1px solid var(--border-bright);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover { background: #334155; border-color: #64748b; }
+
+    button.btn-primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    button.btn-primary:hover { background: #0369a1; }
+
+    button.btn-gold {
+      background: #b45309;
+      border-color: #f59e0b;
+      color: #fff;
+    }
+    button.btn-gold:hover { background: #92400e; }
+
+    button.btn-danger { background: #b91c1c; border-color: #f87171; color: #fff; }
+    button.btn-danger:hover { background: #991b1b; }
+
+    button.btn-success { background: #15803d; border-color: #4ade80; color: #fff; }
+    button.btn-success:hover { background: #166534; }
+
+    button.btn-purple { background: #6b21a8; border-color: #c084fc; color: #fff; }
+    button.btn-purple:hover { background: #581c87; }
+
+    .sliders-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
       font-weight: 600;
     }
-    
-    .detail-box {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 12px;
+
+    .slider-group input[type="range"] {
+      accent-color: var(--color-primary);
+      width: 140px;
+      cursor: pointer;
     }
-    
-    .detail-box h4 {
-      color: #f0883e;
-      margin: 0 0 8px 0;
+
+    /* Event Ticker */
+    .ticker-bar {
+      background: #09101a;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--color-primary);
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
       font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .ticker-message {
+      color: #e2e8f0;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Traffic Flow Arena */
+    .arena-container {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .arena-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .arena-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-ingress {
+      background: #2e1065;
+      color: #d8b4fe;
+      border: 1px solid #7e22ce;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-weight: 700;
+    }
+
+    /* Ingress Router Bar */
+    .ingress-router {
+      background: linear-gradient(180deg, #101c2e 0%, #0d1522 100%);
+      border: 1px solid var(--border-bright);
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .ingress-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .ingress-pulse {
+      width: 12px;
+      height: 12px;
+      background: var(--color-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--color-cyan);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Traffic Packet Canvas */
+    .traffic-canvas-wrapper {
+      position: relative;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(6, 11, 19, 0.7);
+      border: 1px dashed rgba(56, 189, 248, 0.2);
+    }
+
+    #trafficCanvas {
+      width: 100%;
+      height: 115px;
+      display: block;
+    }
+
+    /* The Fleet Grid (6 Containers) */
+    .fleet-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .fleet-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .fleet-grid { grid-template-columns: 1fr; }
+    }
+
+    .pod-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      transition: all 0.25s ease;
+      overflow: hidden;
+    }
+
+    .pod-card.healthy {
+      border-color: rgba(16, 185, 129, 0.35);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .pod-card.computing-crypto {
+      border-color: rgba(245, 158, 11, 0.8);
+      background: #1f1910;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+    }
+
+    .pod-card.overloaded {
+      border-color: rgba(239, 68, 68, 0.9);
+      background: #231219;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+      animation: shake 0.6s infinite alternate;
+    }
+
+    .pod-card.unprotected-choking {
+      border-color: rgba(239, 68, 68, 0.95);
+      background: #2a0e14;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+      animation: shake 0.4s infinite alternate;
+    }
+
+    .protection-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .protection-toggle-btn.prot-on {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .protection-toggle-btn.prot-on:hover {
+      background: rgba(16, 185, 129, 0.25);
+    }
+
+    .protection-toggle-btn.prot-off {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.6);
+      animation: pulse-danger 1.5s infinite;
+    }
+
+    .protection-toggle-btn.prot-off:hover {
+      background: rgba(239, 68, 68, 0.35);
+    }
+
+    @keyframes pulse-danger {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.4); }
+    }
+
+    .pod-signals-mini {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .pod-sig-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pod-sig-col .sig-lbl {
+      color: var(--text-dim);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .pod-sig-col .sig-val {
+      font-family: 'SF Mono', monospace;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    @keyframes shake {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-2px); }
+    }
+
+    .pod-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .pod-name {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'SF Mono', Monaco, monospace;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pod-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-healthy {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-computing {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+    }
+    .status-overloaded {
+      background: rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.7);
+    }
+
+    /* Event Loop Wheel & Metrics */
+    .pod-body {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .wheel-container {
+      width: 76px;
+      height: 76px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .wheel-canvas {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: #080d16;
+      border: 1px solid var(--border);
+    }
+
+    .pod-metrics {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .metric-value.lag-ok { color: #34d399; }
+    .metric-value.lag-warn { color: #fbbf24; }
+    .metric-value.lag-crit { color: #f87171; font-weight: 800; font-size: 15px; }
+
+    /* Task Banner inside Pod */
+    .pod-task-indicator {
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      color: #94a3b8;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 22px;
+    }
+
+    /* Floating Feedback Tags (+200 / 503 Shed) */
+    .float-feedback {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'SF Mono', monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+      animation: floatUp 0.75s forwards ease-out;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-18px); }
+    }
+
+    /* Pod Footer Stats */
+    .pod-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 10px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Multi-line Telemetry Graph */
+    .graph-panel {
+      background: #080d15;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .graph-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .graph-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .graph-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 11px;
+    }
+
+    .graph-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    #telemetryCanvas {
+      width: 100%;
+      height: 120px;
+      display: block;
+      background: #04070c;
+      border-radius: 6px;
+    }
+
+    /* Architectural Deep Dive Cards */
+    .explanation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .info-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      line-height: 1.6;
+      font-size: 13px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .info-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-card.blue h3 { color: var(--color-primary); }
+    .info-card.gold h3 { color: var(--color-gold); }
+    .info-card.purple h3 { color: var(--color-purple); }
+
+    .code-pill {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', monospace;
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <h1>Event Loop & Overload Protection</h1>
-    <div class="subtitle">Interactive visualization of Node.js event loop monitoring</div>
-    
-    <div id="controls">
-      <button id="startBtn">Start Normal Load</button>
-      <button id="heavyBtn">Simulate Fluctuating Load</button>
-      <button id="stopBtn" disabled>Stop</button>
-      <button id="resetBtn">Reset</button>
+  <div class="container">
+    <header>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div class="badge-pill">⚡ Observability Dashboard · 2026 Node.js Fleet Architecture</div>
+        <div style="display: flex; gap: 8px;">
+          <a href="presentation.html" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); padding: 4px 12px; border-radius: 9999px; font-size: 11px; text-decoration: none; font-weight: 600;">📽️ Presentation Deck</a>
+          <a href="../" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 4px 12px; border-radius: 9999px; font-size: 11px; text-decoration: none; font-weight: 600;">📖 Documentation &amp; Overview</a>
+          <a href="https://github.com/andylockran/overload-protection" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); padding: 4px 12px; border-radius: 9999px; font-size: 11px; text-decoration: none; font-weight: 600;">🐙 GitHub Repo</a>
+        </div>
+      </div>
+      <h1>Node.js Fleet Overload Protection</h1>
+      <div class="subtitle">
+        Simulating a 6-container Node.js fleet behind an <strong>AWS Application Load Balancer (ALB)</strong>.
+        Demonstrates the effect of event loop overload protection on the <strong>4 Golden Signals</strong>, 
+        why <strong>ALB forwards 503s directly to the client (ALB never retries requests)</strong>, 
+        and how individual containers protect memory and latency against compounded blocking tasks.
+      </div>
+    </header>
+
+    <!-- Google SRE 4 Golden Signals Section -->
+    <div class="golden-signals-section">
+      <div class="section-title">
+        <span>📊 SRE Golden Signals (Fleet Telemetry)</span>
+      </div>
+      <div class="golden-grid">
+        <!-- 1. Latency (p95 & p99) -->
+        <div class="signal-card latency">
+          <div class="signal-header">
+            <span class="signal-name">1. Latency (Tail)</span>
+            <span class="signal-status-pill pill-healthy" id="pillLatency">Healthy</span>
+          </div>
+          <div class="signal-dual">
+            <div class="signal-dual-item">
+              <span class="label">p95</span>
+              <span class="val" id="signalP95" style="color: #38bdf8;">2.4 ms</span>
+            </div>
+            <div class="signal-dual-item">
+              <span class="label">p99</span>
+              <span class="val" id="signalP99" style="color: #818cf8;">5.8 ms</span>
+            </div>
+          </div>
+          <div class="signal-subtext" style="margin-top: 6px;">Rolling 300-request window</div>
+        </div>
+
+        <!-- 2. Traffic (Throughput) -->
+        <div class="signal-card traffic">
+          <div class="signal-header">
+            <span class="signal-name">2. Traffic (Demand)</span>
+            <span class="signal-status-pill pill-healthy" id="pillTraffic">Target Met</span>
+          </div>
+          <div class="signal-main-metric">
+            <span class="signal-val" id="signalTrafficRate" style="color: #06b6d4;">60</span>
+            <span style="font-size: 13px; color: #94a3b8;">req/min</span>
+          </div>
+          <div class="signal-subtext" id="signalTrafficRPS">~1 req/sec fleet-wide (0.17 req/s / pod)</div>
+        </div>
+
+        <!-- 3. Errors (Error Rate) -->
+        <div class="signal-card errors">
+          <div class="signal-header">
+            <span class="signal-name">3. Errors (503 Rate)</span>
+            <span class="signal-status-pill pill-healthy" id="pillErrors">0.0% Shed</span>
+          </div>
+          <div class="signal-main-metric">
+            <span class="signal-val" id="signalErrorRate" style="color: #10b981;">0.0%</span>
+            <span style="font-size: 13px; color: #94a3b8;">unhandled</span>
+          </div>
+          <div class="signal-subtext" id="signalErrorCount">0 shed (503) · 0 client retries handled</div>
+        </div>
+
+        <!-- 4. Saturation (Fleet Capacity) -->
+        <div class="signal-card saturation">
+          <div class="signal-header">
+            <span class="signal-name">4. Saturation (Capacity)</span>
+            <span class="signal-status-pill pill-healthy" id="pillSaturation">Normal</span>
+          </div>
+          <div class="signal-main-metric">
+            <span class="signal-val" id="signalSaturationVal" style="color: #10b981;">22%</span>
+            <span style="font-size: 13px; color: #94a3b8;">utilized</span>
+          </div>
+          <div class="sat-bar-container">
+            <div class="sat-bar-fill" id="satBarFill" style="width: 22%;"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <div class="phase-indicator">
-      <span class="phase-text" id="phaseText">Click "Start Normal Load" to begin visualization</span>
+
+    <!-- Little's Law Live Capacity Planner & ±50%/min Step Controls -->
+    <div class="littles-law-panel">
+      <div class="ll-header">
+        <div class="ll-title">
+          <span>📐 Little's Law Live Capacity Planner (L = λ · W)</span>
+          <span class="ll-pill">1 Heavy Crypto (16ms) + 8 Lite (0.5ms) per User Journey</span>
+        </div>
+        <div style="font-size: 12px; color: #94a3b8;">
+          Main-thread service time: <strong id="llServiceTime" style="color: #38bdf8;">20.0 ms/journey</strong> · Target loop utilization: <strong style="color: #10b981;">ρ ≤ 0.70</strong>
+        </div>
+      </div>
+
+      <div class="ll-grid">
+        <!-- 1. Discrete Users Starting Journeys -->
+        <div class="ll-stat-card">
+          <span class="ll-stat-label">Users Starting Journeys</span>
+          <span class="ll-stat-val" id="llUserJourneys" style="color: #38bdf8;">7 /min</span>
+          <span class="ll-stat-sub" id="llUserRps">~0.1 new users/sec</span>
+        </div>
+
+        <!-- 2. Single-Container Safe Capacity -->
+        <div class="ll-stat-card">
+          <span class="ll-stat-label">Safe Capacity / Pod</span>
+          <span class="ll-stat-val" id="llPodCapacity" style="color: #10b981;">2,100 /min</span>
+          <span class="ll-stat-sub" id="llPodCapacityRps">35.0 users/sec (315 req/s)</span>
+        </div>
+
+        <!-- 3. Dimensioned Fleet Size (Little's Law) -->
+        <div class="ll-stat-card">
+          <span class="ll-stat-label">Containers Needed</span>
+          <span class="ll-stat-val" id="llRequiredPods" style="color: #10b981;">1 Container</span>
+          <span class="ll-stat-sub" id="llFleetRatio">Fleet has 6 pods (5 excess headroom)</span>
+        </div>
+
+        <!-- 4. Autoscaler & Overload State -->
+        <div class="ll-stat-card">
+          <span class="ll-stat-label">Autoscaler & Overload State</span>
+          <span class="ll-stat-val" id="llAutoscalerStatus" style="color: #10b981;">Healthy Headroom</span>
+          <span class="ll-stat-sub" id="llAutoscalerSub">Zero shedding needed · Event loop &lt; 3ms</span>
+        </div>
+      </div>
+
+      <!-- Minute-by-Minute ±50% Rate Modification & Auto Schedule -->
+      <div class="step-controls-bar">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <strong style="color: #cbd5e1;">Rate Multiplier (±50%/min):</strong>
+          <span style="color: #94a3b8;">Surge or drop user journeys incrementally to simulate autoscaler lag:</span>
+        </div>
+        <div class="step-btn-group">
+          <button class="btn-step btn-surge" id="btnSurge50" onclick="modifyTraffic(1.5)" title="Increase traffic and user journeys by +50%">
+            📈 +50% Surge
+          </button>
+          <button class="btn-step btn-drop" id="btnDrop50" onclick="modifyTraffic(0.5)" title="Decrease traffic and user journeys by -50%">
+            📉 -50% Drop
+          </button>
+          <button class="btn-step btn-auto-step" id="btnAutoStep" onclick="toggleAutoStep()" title="Automatically cycle traffic ±50% every minute">
+            ⏱️ Auto ±50%/min: <span id="autoStepStatus">OFF</span>
+          </button>
+          <div class="auto-timer-badge" id="autoTimerBadge" style="display: none;">
+            <span>Next step in:</span>
+            <strong id="autoStepCountdown" style="color: #c084fc;">60s</strong>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <div id="visualization"></div>
-    
-    <div class="tooltip" id="tooltip"></div>
-    
-    <div class="legend">
-      <div style="font-size: 16px; font-weight: 600; color: #58a6ff; margin-bottom: 10px;">Legend</div>
-      <div class="legend-item">
-        <span class="legend-color" style="background: #58a6ff;"></span>
-        Normal Request (200 OK)
+
+    <!-- Guided Story Mode / Scenario Walkthrough -->
+    <div class="story-banner">
+      <div>
+        <div class="story-title">
+          <span>📖 Guided Architectural Walkthrough</span>
+          <span style="font-size: 11px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 8px; border-radius: 4px;">Click a scenario to trigger external traffic patterns</span>
+        </div>
+        <div class="story-desc" id="storyDesc">
+          <strong>Baseline (60 req/min, 2% Crypto):</strong> Fleet runs completely healthy at 1 req/sec (~1 request every 6s per pod). Single 16ms tasks have minimal impact (~18ms lag &lt; 42ms limit) and drain in ~200ms. 0% shed, 0% error rate.
+        </div>
       </div>
-      <div class="legend-item">
-        <span class="legend-color" style="background: #f85149;"></span>
-        Rejected Request (503)
-      </div>
-      <div class="legend-item">
-        <span class="legend-color" style="background: #7ee787;"></span>
-        Event Loop Sampling
-      </div>
-      <div class="legend-item">
-        <span class="legend-color" style="background: #f0883e;"></span>
-        Heavy Task
+      <div class="story-steps">
+        <button class="story-step-btn active" id="btnStory1" onclick="runStoryStep(1)">1. Baseline (60 req/min)</button>
+        <button class="story-step-btn" id="btnStory2" onclick="runStoryStep(2)">2. Compounded Tasks (Prot ON)</button>
+        <button class="story-step-btn" id="btnStory3" onclick="runStoryStep(3)">3. Unprotected Failure (Prot OFF)</button>
+        <button class="story-step-btn" id="btnStory4" onclick="runStoryStep(4)">4. +50% Surge (Autoscaler Lag)</button>
       </div>
     </div>
-    
-    <div class="explanation">
-      <h3>How It Works</h3>
-      <p>
-        <strong>Event Loop Monitoring:</strong> The overload-protection library uses 
-        high-resolution timer sampling via <span class="code">process.hrtime.bigint()</span> to measure the delay between event loop ticks. 
-        When the event loop is busy with CPU-intensive tasks, the delay increases.
-      </p>
-      <p>
-        <strong>Threshold Detection:</strong> When the event loop delay exceeds 
-        <span class="code">maxEventLoopDelay</span> (default 42ms), the middleware 
-        detects overload and starts rejecting requests with 503 (Service Unavailable).
-      </p>
-      <p>
-        <strong>Load Shedding:</strong> By rejecting requests early, the server protects 
-        itself from cascading failures. Rejected requests can retry later (via 
-        <span class="code">Retry-After</span> header), allowing the server to recover.
-      </p>
-      <p>
-        <strong>Memory Monitoring:</strong> The library also monitors heap usage and RSS memory, 
-        providing comprehensive protection against resource exhaustion.
-      </p>
-      
-      <div class="detail-box">
-        <h4>🎯 What to Watch For</h4>
-        <ul style="margin: 5px 0; padding-left: 20px;">
-          <li><strong>Event Loop Speed:</strong> The rotating indicator spins quickly under normal load, slows down dramatically when overloaded</li>
-          <li><strong>Request Colors:</strong> Blue circles = accepted (200 OK), Red circles = rejected (503)</li>
-          <li><strong>Green Pulses:</strong> Show the sampling interval (every 5ms by default)</li>
-          <li><strong>Delay Threshold:</strong> Watch the delay fluctuate above and below 42ms threshold when you click "Simulate Fluctuating Load"</li>
-          <li><strong>Recovery Cycles:</strong> Observe how the system automatically recovers when delay drops below threshold</li>
-        </ul>
+
+    <!-- Simulation Controls Panel -->
+    <div class="controls-panel">
+      <div class="btn-group">
+        <button id="btnInjectCrypto" class="btn-gold">🔑 Inject Tasks (4 × 16ms)</button>
+        <button id="btnToggleAllProtection" class="btn-purple" onclick="toggleAllProtection()">🛡️ Toggle Fleet Protection</button>
+        <button id="btnUnspikeAll" class="btn-success">🔄 Clear / Unspike Fleet</button>
+        <button id="btnPause">⏸ Pause</button>
+        <button id="btnReset">↺ Reset Stats</button>
       </div>
-      
-      <div class="detail-box">
-        <h4>📊 Configuration Options</h4>
-        <ul style="margin: 5px 0; padding-left: 20px;">
-          <li><span class="code">maxEventLoopDelay</span>: 42ms (default) - threshold for event loop lag detection</li>
-          <li><span class="code">maxHeapUsedBytes</span>: 0 (disabled) - can monitor heap memory usage</li>
-          <li><span class="code">maxRssBytes</span>: 0 (disabled) - can monitor RSS memory usage</li>
-          <li><span class="code">sampleInterval</span>: 5ms - how often to check event loop delay</li>
-          <li><span class="code">clientRetrySecs</span>: 1s - tells clients when to retry via Retry-After header</li>
-        </ul>
+
+      <div class="sliders-container">
+        <!-- Traffic Slider (req/min) -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Incoming Traffic:</span>
+            <strong id="rateLabel" style="color: #38bdf8;">60 req/min</strong>
+          </div>
+          <input type="range" id="rateSlider" min="10" max="500000" step="10" value="60">
+        </div>
+
+        <!-- User Journeys Starting Slider -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>User Journeys:</span>
+            <strong id="journeyLabel" style="color: #818cf8;">7 /min</strong>
+          </div>
+          <input type="range" id="journeySlider" min="1" max="55555" step="1" value="7">
+        </div>
+
+        <!-- Crypto Session Ratio Slider -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>New User Sessions:</span>
+            <strong id="cryptoRatioLabel" style="color: #fbbf24;">2%</strong>
+          </div>
+          <input type="range" id="cryptoSlider" min="0" max="25" step="1" value="2">
+        </div>
+
+        <!-- Crypto Task Impact Duration Slider -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Task Impact / Block:</span>
+            <strong id="impactLabel" style="color: #f59e0b;">16ms</strong>
+          </div>
+          <input type="range" id="impactSlider" min="4" max="40" step="2" value="16">
+        </div>
+
+        <!-- Tasks Per Burst Slider -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Tasks per Burst:</span>
+            <strong id="burstCountLabel" style="color: #a855f7;">4 Tasks</strong>
+          </div>
+          <input type="range" id="burstSlider" min="1" max="12" step="1" value="4">
+        </div>
+
+        <!-- Delay Limit Slider -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Max Delay Limit:</span>
+            <strong id="threshLabel">42ms</strong>
+          </div>
+          <input type="range" id="threshSlider" min="15" max="75" step="1" value="42">
+        </div>
       </div>
-      
-      <div class="detail-box">
-        <h4>🔄 Request Lifecycle</h4>
-        <ol style="margin: 5px 0; padding-left: 20px;">
-          <li><strong>Arrival:</strong> Request appears in "Incoming Requests" section</li>
-          <li><strong>Overload Check:</strong> Middleware checks if <span class="code">profiler.overload === true</span></li>
-          <li><strong>Decision:</strong>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-              <li>If overloaded: Immediate 503 response, request moves directly to responses (red)</li>
-              <li>If not overloaded: Request enters event loop for processing (blue)</li>
-            </ul>
-          </li>
-          <li><strong>Processing:</strong> Request is processed in the event loop (adds to delay if heavy)</li>
-          <li><strong>Response:</strong> Completed request moves to "Responses" section</li>
-          <li><strong>Cleanup:</strong> Response fades out after 1 second</li>
-        </ol>
+    </div>
+
+    <!-- Live Event Ticker -->
+    <div class="ticker-bar">
+      <div class="ticker-message" id="tickerMsg">
+        🟢 Fleet healthy at 60 req/min (~1 req/s). Protection enabled on all containers.
       </div>
-      
-      <div class="detail-box">
-        <h4>⚡ Why This Matters</h4>
-        <p style="margin: 5px 0;">
-          Without overload protection, a surge of requests would queue up, causing ALL requests to 
-          experience extreme delays. The event loop would become blocked, making the entire server 
-          unresponsive. By rejecting excess requests early (fail-fast), the server maintains 
-          responsiveness for requests it CAN handle, preventing cascading failures.
+      <div style="font-size: 11px; color: #64748b; font-family: monospace;">OVERLOAD-PROTECTION v3.0</div>
+    </div>
+
+    <!-- Visual Arena: Ingress Balancer + Real-Time Packet Router + Pods -->
+    <div class="arena-container">
+      <div class="arena-header">
+        <div class="arena-title">
+          <span>AWS Application Load Balancer (ALB)</span>
+          <span class="badge-ingress">ALB Forwards 503 Directly to Client · All Retries Client-Initiated</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          Key: <span style="color: #38bdf8;">● Fast Transaction</span> · 
+          <span style="color: #fbbf24;">● Cryptographic Task</span> · 
+          <span style="color: #ef4444;">● 503 Returned Straight to Client (Retry-After)</span> · 
+          <span style="color: #c084fc;">● Client Retry (200 OK)</span>
+        </div>
+      </div>
+
+      <!-- Ingress Router Bar -->
+      <div class="ingress-router">
+        <div class="ingress-info">
+          <div class="ingress-pulse"></div>
+          <div>
+            <div style="font-size: 14px; font-weight: 700;">AWS ALB Target Group Dispatcher</div>
+            <div style="font-size: 11px; color: var(--text-muted);">ALB forwards target 503 directly to client (ALB never retries requests) · Client backs off and sends new retry</div>
+          </div>
+        </div>
+        <div style="font-size: 12px; font-family: monospace; color: #38bdf8;" id="ingressDispatchText">
+          Dispatching: Pod #1
+        </div>
+      </div>
+
+      <!-- Live Traffic Flow Canvas (Animated Request Packets) -->
+      <div class="traffic-canvas-wrapper">
+        <canvas id="trafficCanvas" width="1380" height="115"></canvas>
+      </div>
+
+      <!-- The Fleet Grid (6 Containers) -->
+      <div class="fleet-grid" id="fleetGrid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Real-time Multi-Pod Lag Telemetry Graph -->
+      <div class="graph-panel">
+        <div class="graph-header">
+          <div class="graph-title">Event Loop Delay Over Time (Pods 1–6)</div>
+          <div class="graph-legend">
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#38bdf8;"></div>Pod 1</div>
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#34d399;"></div>Pod 2</div>
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#f43f5e;"></div>Pod 3</div>
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#c084fc;"></div>Pod 4</div>
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#2dd4bf;"></div>Pod 5</div>
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#fb923c;"></div>Pod 6</div>
+            <div class="graph-legend-item"><div class="legend-dot" style="background:#ef4444; border-radius: 0; width: 14px; height: 2px;"></div>Limit (42ms)</div>
+          </div>
+        </div>
+        <canvas id="telemetryCanvas" width="1380" height="120"></canvas>
+      </div>
+    </div>
+
+    <!-- Explanatory Architecture Panels -->
+    <div class="explanation-grid">
+      <div class="info-card gold">
+        <h3>🔐 Configurable Cryptographic Task Blocking</h3>
+        <p>
+          Unlike asynchronous I/O (database queries, network fetch), 
+          <strong>cryptographic operations</strong> (password hashing with bcrypt/argon2, ECDH key exchange, token signing)
+          execute synchronously on the single JavaScript main thread.
         </p>
-        <p style="margin: 5px 0;">
-          This is especially critical for microservices where one overloaded service can bring down 
-          an entire system through retry storms and resource exhaustion.
+        <p style="margin-top: 8px;">
+          Using the controls above, you can configure both the <strong>task duration</strong> (e.g. 16ms) and the <strong>number of tasks</strong>.
+          A single task (16ms) produces minimal impact on a healthy container ($\approx 18\text{ms} &lt; 42\text{ms}$ limit). 
+          Only when multiple tasks <strong>compound</strong> ($3 \times 16\text{ms} = 48\text{ms} &gt; 42\text{ms}$) does event loop delay exceed the threshold.
+        </p>
+      </div>
+
+      <div class="info-card purple">
+        <h3>🛡️ Overload Protection ON vs OFF (Per-Container Impact)</h3>
+        <p>
+          Try toggling <strong>Overload Protection OFF</strong> on an individual container and injecting tasks to see the catastrophic difference on its <strong>4 Golden Signals</strong>:
+        </p>
+        <p style="margin-top: 8px;">
+          <strong>With Protection ON:</strong> When loop delay exceeds the limit, <code>overload-protection</code> immediately sheds excess incoming requests with 
+          <span class="code-pill">503 Service Unavailable</span> in &lt;0.05ms. Latency stays bounded, memory stays flat at ~50MB, and the container rapidly recovers.
+        </p>
+        <p style="margin-top: 8px;">
+          <strong>With Protection OFF (Queue Collapse &amp; 30s ALB Timeout):</strong> 
+          The event loop does <em>not</em> stop—it spins actively executing callbacks on the main thread.
+          As long as a delayed response emits in <strong>&lt; 30s</strong>, it returns to the ALB and the client receives <code>200 OK</code> (with huge tail latency).
+          However, if the response is not emitted within <strong>30s</strong>, the ALB target response timeout fires and <strong>ALB returns a 503 error directly to the client</strong>.
+          Crucially, Node.js does not cancel the task: <strong>the task carries on doing the work to completion</strong> (wasting CPU cycles and ballooning RSS memory past 300MB+ for a client that already received a 503).
+        </p>
+      </div>
+
+      <div class="info-card blue">
+        <h3>🔄 Client-Initiated Retries (ALB Reality)</h3>
+        <p>
+          A vital reality of cloud architectures: 
+          <strong>AWS Application Load Balancers do NOT retry 503 responses—all shed requests go straight back to the client</strong>.
+        </p>
+        <p style="margin-top: 8px;">
+          By including <span class="code-pill">Retry-After: 1</span>, <code>overload-protection</code> instructs the client application (browser, mobile app, API caller) 
+          to back off before retrying. When the client initiates a subsequent request, the ALB distributes it across healthy sibling containers in the target group.
+        </p>
+      </div>
+
+      <div class="info-card blue">
+        <h3>📐 Little's Law &amp; Fleet Sizing (L = λ · W)</h3>
+        <p>
+          According to <strong>Little's Law</strong>, concurrency is <code>L = λ · W</code>.
+          For a single-threaded Node.js event loop, queueing theory dictates that response latency scales with CPU utilization <code>ρ = λ · S</code> as:
+          <span class="code-pill">W = S / (1 - ρ)</span>
+        </p>
+        <p style="margin-top: 8px;">
+          For a user journey requiring <strong>1 heavy crypto task (16ms)</strong> and <strong>8 lite requests (0.5ms each)</strong>, 
+          the main thread is occupied for <code>S = 16ms + 4ms = 20ms (0.020s)</code> per journey.
+          The single crypto task accounts for <strong>80% of total CPU time</strong>!
+        </p>
+        <p style="margin-top: 8px;">
+          To keep event loop delay safely below the 42ms limit, we target <code>ρ ≤ 0.70</code>.
+          Hence, <strong>1 container safely sustains</strong>:
+          <span class="code-pill">λ = 0.70 / 0.020s = 35 journeys/s = 2,100 user journeys/min</span> (18,900 req/min).
+          For <code>U</code> discrete users starting journeys per minute, required containers = <code>⌈U / 2,100⌉</code>.
+        </p>
+      </div>
+
+      <div class="info-card gold">
+        <h3>⚡ The ±50%/min Surge &amp; Autoscaler Lag Window</h3>
+        <p>
+          When user journeys suddenly surge by <strong>+50%</strong>, thread utilization leaps from <code>ρ = 0.70</code> to <code>ρ = 1.05 &gt; 1.0</code>.
+          In cloud environments (ECS Fargate, EKS, Cloud Run), horizontal pod autoscalers require <strong>60 to 180 seconds</strong> to register CloudWatch alarms, provision nodes, pull images, and pass ALB health checks.
+        </p>
+        <p style="margin-top: 8px;">
+          During this 1-minute autoscaler lag window, an unprotected container suffers queue explosion: <code>L_q → ∞</code>, RSS memory balloons past 300MB+, and the process crashes from OOM.
+          With <code>overload-protection</code>, the container sheds the excess +50% requests in &lt;0.05ms with <code>503</code> + <code>Retry-After</code>, keeping memory flat and loop lag low so the existing fleet survives intact until autoscaling completes!
         </p>
       </div>
     </div>
   </div>
 
   <script>
-    // Configuration
-    const config = {
-      width: 1360,
-      height: 600,
-      maxEventLoopDelay: 42,
-      normalRequestInterval: 500,
-      heavyRequestInterval: 100,
-      sampleInterval: 5
-    };
+    // Fleet Configuration
+    const POD_COLORS = ['#38bdf8', '#34d399', '#f43f5e', '#c084fc', '#2dd4bf', '#fb923c'];
+    const NUM_PODS = 6;
+    let maxDelayThreshold = 42;
+    let requestsPerMinute = 60; // Sensible starting baseline: 60 req/min (~1 req/s across fleet)
+    let cryptoRatioPercent = 2; // % of requests that are cryptographic session creation
+    let cryptoTaskImpactMs = 16; // Blocking impact (ms) of a single cryptographic task
+    let burstTaskCount = 4; // Number of tasks injected in a burst
+    let simulationRunning = true;
 
-    // State
-    let state = {
-      running: false,
-      heavyLoad: false,
-      requestCount: 0,
-      rejectedCount: 0,
-      acceptedCount: 0,
-      eventLoopDelay: 0,
+    // Rolling Request Latency Window (for p95 / p99 calculation)
+    const recentLatencies = [];
+    const MAX_LATENCY_SAMPLES = 300;
+
+    // Global Statistics
+    let totalServed = 0;
+    let totalShed = 0;
+    let totalClientRetriesHandled = 0;
+    let totalDropped503 = 0;
+
+    // Active Packets on Canvas
+    const activePackets = [];
+
+    // Pod State Models
+    const pods = Array.from({ length: NUM_PODS }, (_, i) => ({
+      id: i + 1,
+      name: `node-pod-${i + 1}`,
+      color: POD_COLORS[i],
+      protectionEnabled: true, // Overload protection toggle for this container
+      delay: 2.2 + Math.random() * 0.6, // ms
+      targetDelay: 2.2,
+      cryptoBacklog: 0, // Pending cryptographic work (ms)
+      currentTask: 'Idle / Serving I/O',
       overload: false,
-      tasks: [],
-      requests: [],
-      samples: [],
-      lastSampleTime: Date.now()
-    };
+      rssMB: 50 + Math.floor(Math.random() * 6),
+      served: 0,
+      shed: 0,
+      unprotectedQueued: 0,
+      wheelAngle: Math.random() * 360,
+      history: new Array(60).fill(2.2)
+    }));
 
-    let timers = {
-      request: null,
-      sample: null
-    };
-
-    // Setup SVG
-    const svg = d3.select('#visualization')
-      .append('svg')
-      .attr('width', config.width)
-      .attr('height', config.height);
-
-    // Define sections
-    const sections = {
-      incoming: { x: 50, y: 50, width: 200, height: 500, title: 'Incoming Requests' },
-      eventLoop: { x: 300, y: 50, width: 400, height: 500, title: 'Event Loop' },
-      monitoring: { x: 750, y: 50, width: 300, height: 240, title: 'Monitoring' },
-      responses: { x: 750, y: 310, width: 300, height: 240, title: 'Responses' },
-      queue: { x: 1100, y: 50, width: 200, height: 500, title: 'Task Queue' }
-    };
-
-    // Draw sections
-    Object.entries(sections).forEach(([key, section]) => {
-      const group = svg.append('g').attr('class', `section-${key}`);
-      
-      group.append('rect')
-        .attr('x', section.x)
-        .attr('y', section.y)
-        .attr('width', section.width)
-        .attr('height', section.height)
-        .attr('fill', '#0d1117')
-        .attr('stroke', '#30363d')
-        .attr('stroke-width', 2)
-        .attr('rx', 6);
-      
-      group.append('text')
-        .attr('x', section.x + section.width / 2)
-        .attr('y', section.y + 25)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#58a6ff')
-        .attr('font-size', '14px')
-        .attr('font-weight', 'bold')
-        .text(section.title);
+    // Setup Pod Cards in DOM with Per-Container Controls & 4 Golden Signals
+    const fleetGrid = document.getElementById('fleetGrid');
+    pods.forEach(pod => {
+      const card = document.createElement('div');
+      card.className = 'pod-card healthy';
+      card.id = `podCard-${pod.id}`;
+      card.innerHTML = `
+        <div class="pod-header">
+          <div class="pod-name">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${pod.color};box-shadow:0 0 6px ${pod.color};"></span>
+            ${pod.name}
+          </div>
+          <button class="protection-toggle-btn prot-on" id="protToggle-${pod.id}" onclick="togglePodProtection(${pod.id})" title="Toggle Overload Protection for this container">
+            🛡️ Protection: ON
+          </button>
+        </div>
+        <div class="pod-body">
+          <div class="wheel-container">
+            <canvas class="wheel-canvas" id="wheel-${pod.id}" width="76" height="76"></canvas>
+          </div>
+          <div class="pod-metrics">
+            <div class="metric-row">
+              <span class="metric-label">Status:</span>
+              <span class="pod-status-badge status-healthy" id="badge-${pod.id}">Healthy</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Loop Delay:</span>
+              <span class="metric-value lag-ok" id="delayVal-${pod.id}">2.2 ms</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">RSS Memory:</span>
+              <span class="metric-value" style="color:#94a3b8;" id="rssVal-${pod.id}">${pod.rssMB} MB</span>
+            </div>
+            <div class="pod-task-indicator" id="taskIndicator-${pod.id}">
+              <span>✓ Serving fast transactions</span>
+            </div>
+          </div>
+        </div>
+        <!-- 4 Golden Signals Breakdown for this container -->
+        <div class="pod-signals-mini">
+          <div class="pod-sig-col">
+            <span class="sig-lbl">1. Latency</span>
+            <span class="sig-val" id="sigLat-${pod.id}" style="color:#38bdf8;">2.2ms</span>
+          </div>
+          <div class="pod-sig-col">
+            <span class="sig-lbl">2. Traffic</span>
+            <span class="sig-val" id="sigTraf-${pod.id}" style="color:#06b6d4;">0</span>
+          </div>
+          <div class="pod-sig-col">
+            <span class="sig-lbl">3. Errors</span>
+            <span class="sig-val" id="sigErr-${pod.id}" style="color:#10b981;">0 shed</span>
+          </div>
+          <div class="pod-sig-col">
+            <span class="sig-lbl">4. Saturation</span>
+            <span class="sig-val" id="sigSat-${pod.id}" style="color:#10b981;">18%</span>
+          </div>
+        </div>
+        <div class="pod-footer">
+          <div>Served: <strong id="served-${pod.id}" style="color:#38bdf8;">0</strong> | Shed: <strong id="shed-${pod.id}" style="color:#f87171;">0</strong></div>
+          <button class="story-step-btn" id="btnPodAdd-${pod.id}" style="padding:2px 8px;font-size:11px;" onclick="triggerPodCrypto(${pod.id})">🔑 +1 Task (${cryptoTaskImpactMs}ms)</button>
+        </div>
+      `;
+      fleetGrid.appendChild(card);
     });
 
-    // Monitoring display
-    const monitoringGroup = svg.append('g').attr('class', 'monitoring-display');
-    
-    const metrics = [
-      { key: 'delay', label: 'Event Loop Delay:', y: 100, format: v => `${v.toFixed(1)}ms` },
-      { key: 'threshold', label: 'Threshold:', y: 130, format: v => `${v}ms` },
-      { key: 'overload', label: 'Overload:', y: 160, format: v => v ? 'YES' : 'no' },
-      { key: 'accepted', label: 'Accepted:', y: 200, format: v => v },
-      { key: 'rejected', label: 'Rejected:', y: 230, format: v => v }
-    ];
-
-    metrics.forEach(metric => {
-      monitoringGroup.append('text')
-        .attr('x', 760)
-        .attr('y', metric.y)
-        .attr('fill', '#8b949e')
-        .attr('font-size', '13px')
-        .text(metric.label);
-      
-      monitoringGroup.append('text')
-        .attr('class', `metric-${metric.key}`)
-        .attr('x', 900)
-        .attr('y', metric.y)
-        .attr('fill', '#7ee787')
-        .attr('font-size', '13px')
-        .attr('font-weight', 'bold')
-        .text(metric.format(metric.key === 'threshold' ? config.maxEventLoopDelay : 0));
-    });
-
-    // Event loop visualization (circular)
-    const loopCenter = { x: 500, y: 300 };
-    const loopRadius = 120;
-    
-    svg.append('circle')
-      .attr('class', 'event-loop-circle')
-      .attr('cx', loopCenter.x)
-      .attr('cy', loopCenter.y)
-      .attr('r', loopRadius)
-      .attr('fill', 'none')
-      .attr('stroke', '#30363d')
-      .attr('stroke-width', 3)
-      .on('mouseover', function(event) {
-        showTooltip(event, 'The Node.js Event Loop processes all async operations. When it\'s blocked by CPU-intensive work, the rotating indicator slows down.');
-      })
-      .on('mouseout', hideTooltip);
-    
-    svg.append('text')
-      .attr('x', loopCenter.x)
-      .attr('y', loopCenter.y - 5)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#58a6ff')
-      .attr('font-size', '16px')
-      .attr('font-weight', 'bold')
-      .text('Event Loop');
-    
-    svg.append('text')
-      .attr('class', 'loop-speed-text')
-      .attr('x', loopCenter.x)
-      .attr('y', loopCenter.y + 15)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#8b949e')
-      .attr('font-size', '11px')
-      .text('Normal Speed');
-
-    // Rotating indicator for event loop
-    const loopIndicator = svg.append('line')
-      .attr('class', 'loop-indicator')
-      .attr('x1', loopCenter.x)
-      .attr('y1', loopCenter.y)
-      .attr('x2', loopCenter.x)
-      .attr('y2', loopCenter.y - loopRadius)
-      .attr('stroke', '#7ee787')
-      .attr('stroke-width', 3);
-    
-    // Add section explanations
-    const explanations = [
-      { section: 'incoming', text: 'Requests arrive here', y: sections.incoming.y + sections.incoming.height + 20 },
-      { section: 'eventLoop', text: 'Processing happens here - watch rotation speed!', y: sections.eventLoop.y + sections.eventLoop.height + 20 },
-      { section: 'monitoring', text: 'Samples every 5ms', y: sections.monitoring.y - 15 },
-      { section: 'queue', text: 'Tasks waiting to execute', y: sections.queue.y + sections.queue.height + 20 }
-    ];
-    
-    explanations.forEach(exp => {
-      const section = sections[exp.section];
-      svg.append('text')
-        .attr('x', section.x + section.width / 2)
-        .attr('y', exp.y)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#6e7681')
-        .attr('font-size', '11px')
-        .attr('font-style', 'italic')
-        .text(exp.text);
-    });
-    
-    // Add arrows showing flow
-    const arrow = d3.symbol().type(d3.symbolTriangle).size(50);
-    
-    // Incoming -> Event Loop
-    svg.append('path')
-      .attr('d', arrow)
-      .attr('transform', `translate(${sections.incoming.x + sections.incoming.width + 20}, ${sections.incoming.y + 100}) rotate(90)`)
-      .attr('fill', '#58a6ff')
-      .attr('opacity', 0.5);
-    
-    // Event Loop -> Responses
-    svg.append('path')
-      .attr('d', arrow)
-      .attr('transform', `translate(${sections.eventLoop.x + sections.eventLoop.width + 20}, ${sections.responses.y + 100}) rotate(90)`)
-      .attr('fill', '#58a6ff')
-      .attr('opacity', 0.5);
-
-    // Animation loop
-    let animationFrame;
-    let loopAngle = 0;
-
-    function animate() {
-      if (!state.running) return;
-      
-      // Rotate event loop indicator
-      const speed = state.overload ? 0.5 : 2; // Slow down when overloaded
-      loopAngle += speed;
-      const radians = (loopAngle * Math.PI) / 180;
-      const x2 = loopCenter.x + Math.sin(radians) * loopRadius;
-      const y2 = loopCenter.y - Math.cos(radians) * loopRadius;
-      
-      loopIndicator
-        .attr('x2', x2)
-        .attr('y2', y2);
-      
-      // Update event loop circle color and speed text based on state
-      svg.select('.event-loop-circle')
-        .attr('stroke', state.overload ? '#f85149' : '#30363d');
-      
-      svg.select('.loop-speed-text')
-        .text(state.overload ? '⚠️ Blocked!' : 'Normal Speed')
-        .attr('fill', state.overload ? '#f85149' : '#8b949e');
-      
-      animationFrame = requestAnimationFrame(animate);
-    }
-    
-    // Tooltip functions
-    function showTooltip(event, text) {
-      const tooltip = document.getElementById('tooltip');
-      tooltip.innerHTML = text;
-      tooltip.style.opacity = '1';
-      tooltip.style.left = (event.pageX + 10) + 'px';
-      tooltip.style.top = (event.pageY + 10) + 'px';
-    }
-    
-    function hideTooltip() {
-      const tooltip = document.getElementById('tooltip');
-      tooltip.style.opacity = '0';
-    }
-    
-    // Update phase indicator
-    function updatePhase(text) {
-      document.getElementById('phaseText').textContent = text;
-    }
-
-    // Generate request
-    function generateRequest() {
-      if (!state.running) return;
-      
-      const request = {
-        id: ++state.requestCount,
-        x: sections.incoming.x + 100,
-        y: sections.incoming.y + 50,
-        status: 'pending'
-      };
-      
-      state.requests.push(request);
-      
-      // Draw request
-      const requestGroup = svg.append('g')
-        .attr('class', `request-${request.id}`)
-        .attr('transform', `translate(${request.x}, ${request.y})`);
-      
-      requestGroup.append('circle')
-        .attr('class', 'request-circle')
-        .attr('r', 8)
-        .attr('fill', '#58a6ff')
-        .attr('opacity', 0)
-        .transition()
-        .duration(200)
-        .attr('opacity', 1);
-      
-      requestGroup.append('text')
-        .attr('y', 4)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#0d1117')
-        .attr('font-size', '10px')
-        .attr('font-weight', 'bold')
-        .text('R');
-      
-      // Add tooltip to request
-      requestGroup
-        .on('mouseover', function(event) {
-          showTooltip(event, `Request #${request.id} - Status: ${request.status}`);
-        })
-        .on('mouseout', hideTooltip);
-      
-      // Check overload
-      if (state.overload) {
-        // Reject request
-        request.status = 'rejected';
-        state.rejectedCount++;
-        updatePhase(`⚠️ OVERLOAD! Request #${request.id} rejected with 503 (event loop delay: ${state.eventLoopDelay.toFixed(1)}ms > 42ms)`);
-        
-        requestGroup.transition()
-          .duration(800)
-          .attr('transform', `translate(${sections.responses.x + 150}, ${sections.responses.y + 100})`)
-          .on('end', () => {
-            requestGroup.select('.request-circle')
-              .attr('fill', '#f85149');
-            
-            setTimeout(() => {
-              requestGroup.transition()
-                .duration(500)
-                .attr('opacity', 0)
-                .remove();
-            }, 1000);
-          });
+    // Per-Container Overload Protection Toggle
+    window.togglePodProtection = function(id) {
+      const pod = pods.find(p => p.id === id);
+      if (!pod) return;
+      pod.protectionEnabled = !pod.protectionEnabled;
+      const btn = document.getElementById(`protToggle-${pod.id}`);
+      if (btn) {
+        btn.className = `protection-toggle-btn ${pod.protectionEnabled ? 'prot-on' : 'prot-off'}`;
+        btn.textContent = pod.protectionEnabled ? '🛡️ Protection: ON' : '⚠️ Protection: OFF';
+      }
+      if (pod.protectionEnabled) {
+        updateTicker(`🛡️ Overload protection <strong>ENABLED</strong> for <strong>${pod.name}</strong>. Container will shed 503s straight to client if loop exceeds ${maxDelayThreshold}ms.`);
       } else {
-        // Accept request - process in event loop
-        request.status = 'accepted';
-        state.acceptedCount++;
-        updatePhase(`✓ Request #${request.id} accepted - processing in event loop (delay: ${state.eventLoopDelay.toFixed(1)}ms)`);
-        
-        // Move to event loop
-        requestGroup.transition()
-          .duration(600)
-          .attr('transform', `translate(${loopCenter.x}, ${loopCenter.y})`)
-          .on('end', () => {
-            // Simulate processing
-            const processingTime = state.heavyLoad ? 100 : 50;
-            
-            if (state.heavyLoad) {
-              // Heavy tasks still add to delay, but fluctuation is handled in sampling
-              const delayIncrease = Math.random() * 15 + 5;
-              state.eventLoopDelay += delayIncrease;
-              updatePhase(`⚙️ Processing heavy task for request #${request.id} - delay increased by ${delayIncrease.toFixed(1)}ms`);
-            }
-            
-            setTimeout(() => {
-              updatePhase(`→ Request #${request.id} completed - sending 200 OK response`);
-              // Move to response
-              requestGroup.transition()
-                .duration(600)
-                .attr('transform', `translate(${sections.responses.x + 150}, ${sections.responses.y + 100})`)
-                .on('end', () => {
+        updateTicker(`⚠️ Overload protection <strong>DISABLED</strong> for <strong>${pod.name}</strong>! Container will buffer all requests, risking queue collapse & memory explosion.`);
+      }
+    };
+
+    // Toggle All Protection across fleet
+    window.toggleAllProtection = function() {
+      const anyOn = pods.some(p => p.protectionEnabled);
+      const targetState = !anyOn;
+      pods.forEach(p => {
+        p.protectionEnabled = targetState;
+        const btn = document.getElementById(`protToggle-${p.id}`);
+        if (btn) {
+          btn.className = `protection-toggle-btn ${targetState ? 'prot-on' : 'prot-off'}`;
+          btn.textContent = targetState ? '🛡️ Protection: ON' : '⚠️ Protection: OFF';
+        }
+      });
+      const allBtn = document.getElementById('btnToggleAllProtection');
+      if (allBtn) {
+        allBtn.textContent = targetState ? '🛡️ Toggle Fleet Protection (All ON)' : '⚠️ Toggle Fleet Protection (All OFF)';
+      }
+      updateTicker(targetState ? '🛡️ Overload protection <strong>ENABLED</strong> across all containers.' : '⚠️ Overload protection <strong>DISABLED</strong> across entire fleet! Containers vulnerable to queue cliffs.');
+    };
+
+    // Event Loop Wheel Drawing (Visualizing Timers, Poll, Check, Microtasks)
+    function drawWheel(pod) {
+      const canvas = document.getElementById(`wheel-${pod.id}`);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = 26;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Track ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = pod.overload ? 'rgba(239, 68, 68, 0.4)' : (pod.cryptoBacklog > 0 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(56, 189, 248, 0.2)');
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+
+      // Phases notches (Timers, Poll, Check, Close)
+      const normalizedAngle = ((pod.wheelAngle % 360) + 360) % 360;
+
+      for (let i = 0; i < 4; i++) {
+        const ang = (i * Math.PI / 2) - Math.PI / 2;
+        const nx = cx + Math.cos(ang) * (r + 4);
+        const ny = cy + Math.sin(ang) * (r + 4);
+
+        const phaseDeg = (i === 0) ? 270 : (i === 1 ? 0 : (i === 2 ? 90 : 180));
+        const diffDeg = Math.abs(normalizedAngle - phaseDeg);
+        const isActivePhase = diffDeg < 40 || diffDeg > 320;
+
+        ctx.beginPath();
+        ctx.arc(nx, ny, isActivePhase ? 3.5 : 2.0, 0, Math.PI * 2);
+        ctx.fillStyle = isActivePhase ? (pod.overload ? '#ef4444' : (pod.cryptoBacklog > 0 ? '#fbbf24' : '#38bdf8')) : 'rgba(148, 163, 184, 0.4)';
+        ctx.fill();
+      }
+
+      // Spinning Hand / Needle
+      const rad = (pod.wheelAngle * Math.PI) / 180;
+      const armX = cx + Math.cos(rad) * (r - 2);
+      const armY = cy + Math.sin(rad) * (r - 2);
+
+      // Needle
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(armX, armY);
+      ctx.strokeStyle = pod.overload ? '#ef4444' : (pod.cryptoBacklog > 0 ? '#fbbf24' : pod.color);
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Center pivot
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = pod.overload ? '#ef4444' : '#fff';
+      ctx.fill();
+
+      // Loop status label inside wheel matching node summary
+      ctx.font = '8px -apple-system, BlinkMacSystemFont, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = pod.overload ? '#ef4444' : (pod.cryptoBacklog > 0 ? '#fbbf24' : '#64748b');
+      const statusText = pod.overload ? (pod.protectionEnabled ? 'SHED' : 'CHOKE') : (pod.cryptoBacklog > 0 ? 'BUSY' : 'FAST');
+      ctx.fillText(statusText, cx, cy + 14);
+    }
+
+    // Traffic Flow Canvas
+    const trafficCanvas = document.getElementById('trafficCanvas');
+    const pCtx = trafficCanvas.getContext('2d');
+
+    function updateAndDrawTrafficCanvas() {
+      const w = trafficCanvas.width;
+      const h = trafficCanvas.height;
+      pCtx.clearRect(0, 0, w, h);
+
+      const ingressX = w / 2;
+      const ingressY = 12;
+      const laneWidth = w / NUM_PODS;
+
+      // Draw highway lane guides
+      for (let i = 0; i < NUM_PODS; i++) {
+        const targetX = (i + 0.5) * laneWidth;
+        const targetY = h - 6;
+
+        pCtx.beginPath();
+        pCtx.moveTo(ingressX, ingressY);
+        pCtx.bezierCurveTo(ingressX, h * 0.4, targetX, h * 0.5, targetX, targetY);
+        pCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        pCtx.lineWidth = 1.5;
+        pCtx.stroke();
+      }
+
+      // Draw and animate traveling packets
+      for (let i = activePackets.length - 1; i >= 0; i--) {
+        const p = activePackets[i];
+        p.progress += p.speed;
+
+        if (p.phase === 'travel') {
+          const startX = ingressX;
+          const startY = ingressY;
+          const endX = (p.targetIndex + 0.5) * laneWidth;
+          const endY = h - 6;
+
+          const t = Math.min(1, p.progress);
+          const cx1 = startX;
+          const cy1 = h * 0.4;
+          const cx2 = endX;
+          const cy2 = h * 0.5;
+
+          const curX = Math.pow(1 - t, 3) * startX + 3 * Math.pow(1 - t, 2) * t * cx1 + 3 * (1 - t) * Math.pow(t, 2) * cx2 + Math.pow(t, 3) * endX;
+          const curY = Math.pow(1 - t, 3) * startY + 3 * Math.pow(1 - t, 2) * t * cy1 + 3 * (1 - t) * Math.pow(t, 2) * cx2 + Math.pow(t, 3) * endY;
+
+          // Render Packet
+          pCtx.beginPath();
+          pCtx.arc(curX, curY, p.isCrypto ? 5.5 : 4, 0, Math.PI * 2);
+          pCtx.fillStyle = p.isCrypto ? '#fbbf24' : '#38bdf8';
+          pCtx.shadowColor = p.isCrypto ? '#fbbf24' : '#38bdf8';
+          pCtx.shadowBlur = p.isCrypto ? 10 : 6;
+          pCtx.fill();
+          pCtx.shadowBlur = 0;
+
+          if (p.progress >= 1.0) {
+            const targetPod = pods[p.targetIndex];
+
+            // If pod is currently overloaded
+            if (targetPod.overload) {
+              if (targetPod.protectionEnabled) {
+                // OVERLOAD PROTECTION ON: shed immediately (<0.05ms)!
+                targetPod.shed++;
+                totalShed++;
+                spawnFeedbackBadge(targetPod.id, '🛡️ 503 (<0.05ms)', '#ef4444');
+                recordLatency(targetPod.delay);
+
+                // All requests go straight back to the client once load-shedded (ALB never retries)
+                p.phase = 'return_503_to_client';
+                p.progress = 0;
+                p.startX = endX;
+                p.startY = endY - 8;
+                p.endX = ingressX;
+                p.endY = ingressY;
+                p.speed = 0.055;
+              } else {
+                // OVERLOAD PROTECTION OFF: cannot shed! Queue collapse & memory explosion!
+                targetPod.unprotectedQueued++;
+
+                // Task execution continues in Node.js event loop
+                targetPod.cryptoBacklog += p.isCrypto ? cryptoTaskImpactMs : 3.5;
+                // RSS memory balloons as queued request buffers accumulate in V8 heap
+                targetPod.rssMB = Math.min(650, targetPod.rssMB + 7);
+
+                // Latency scales with queue backlog (30s = 30,000ms ALB target response timeout threshold)
+                const estimatedDelayMs = targetPod.delay + (targetPod.unprotectedQueued * 1200);
+
+                if (estimatedDelayMs < 30000) {
+                  // Emitted in < 30s: response returns to ALB delayed, client receives 200 OK!
+                  targetPod.served++;
+                  totalServed++;
+                  const delaySec = (estimatedDelayMs / 1000).toFixed(1);
+                  spawnFeedbackBadge(targetPod.id, `⏱️ Delayed (${delaySec}s < 30s) -> 200 OK`, '#f59e0b');
+                  recordLatency(estimatedDelayMs);
+                  activePackets.splice(i, 1);
+                } else {
+                  // NOT emitted within 30s:
+                  // ALB times out at 30s and sends 503 error directly to client!
+                  // BUT the task in Node.js carries on doing the work to completion!
+                  targetPod.shed++;
+                  totalShed++;
+                  totalDropped503++;
+
+                  spawnFeedbackBadge(targetPod.id, '⏱️ ALB 503 (30s Timeout)', '#ef4444');
                   setTimeout(() => {
-                    requestGroup.transition()
-                      .duration(500)
-                      .attr('opacity', 0)
-                      .remove();
-                  }, 1000);
-                });
-            }, processingTime);
-          });
+                    spawnFeedbackBadge(targetPod.id, '🧟 Task Continues in Node', '#f97316');
+                  }, 350);
+
+                  recordLatency(30000);
+
+                  // ALB emits 503 error packet back to client
+                  p.phase = 'return_503_to_client';
+                  p.progress = 0;
+                  p.startX = endX;
+                  p.startY = endY - 8;
+                  p.endX = ingressX;
+                  p.endY = ingressY;
+                  p.speed = 0.055;
+                  p.isAlbTimeout = true;
+                }
+              }
+            } else {
+              // Pod accepts and processes normally
+              targetPod.served++;
+              totalServed++;
+
+              if (p.isCrypto) {
+                targetPod.cryptoBacklog += cryptoTaskImpactMs;
+                spawnFeedbackBadge(targetPod.id, `🔑 Task (${cryptoTaskImpactMs}ms)`, '#fbbf24');
+                recordLatency(targetPod.delay + cryptoTaskImpactMs);
+              } else {
+                spawnFeedbackBadge(targetPod.id, '+200 OK', '#10b981');
+                recordLatency(targetPod.delay + 1.2);
+              }
+              activePackets.splice(i, 1);
+            }
+          }
+        } else if (p.phase === 'return_503_to_client') {
+          // 503 packet traveling back UP to the Client (ALB does not retry)
+          const t = Math.min(1, p.progress);
+          const curX = p.startX + (p.endX - p.startX) * t;
+          const curY = p.startY + (p.endY - p.startY) * t;
+
+          pCtx.beginPath();
+          pCtx.arc(curX, curY, 5, 0, Math.PI * 2);
+          pCtx.fillStyle = '#ef4444';
+          pCtx.shadowColor = '#ef4444';
+          pCtx.shadowBlur = 10;
+          pCtx.fill();
+          pCtx.shadowBlur = 0;
+
+          if (p.progress >= 1.0) {
+            // Client receives 503 Service Unavailable (Retry-After: 1s)!
+            if (p.isAlbTimeout) {
+              updateTicker('🚨 <strong>ALB 30s Timeout!</strong> ALB returned 503 to client because response was not emitted within 30s. <strong>Task still carries on doing the work in Node.js to completion!</strong>');
+            }
+            // All requests go straight back to the client once load-shedded.
+            // Client backs off and sends a new Client-Initiated Retry back to ALB:
+            const healthySiblings = pods.filter(s => !s.overload && s.id !== (p.targetIndex + 1));
+            if (healthySiblings.length > 0) {
+              const sibling = healthySiblings[Math.floor(Math.random() * healthySiblings.length)];
+              p.phase = 'client_retry';
+              p.progress = 0;
+              p.startX = ingressX;
+              p.startY = ingressY;
+              p.siblingIndex = sibling.id - 1;
+              p.endX = (p.siblingIndex + 0.5) * laneWidth;
+              p.endY = h - 6;
+              p.speed = 0.045;
+            } else {
+              // Fleet fully saturated: client retry cannot find capacity
+              totalDropped503++;
+              activePackets.splice(i, 1);
+            }
+          }
+        } else if (p.phase === 'client_retry') {
+          // Client Retry traveling down to healthy sibling
+          const t = Math.min(1, p.progress);
+          const cx1 = p.startX;
+          const cy1 = h * 0.4;
+          const cx2 = p.endX;
+          const cy2 = h * 0.5;
+
+          const curX = Math.pow(1 - t, 3) * p.startX + 3 * Math.pow(1 - t, 2) * t * cx1 + 3 * (1 - t) * Math.pow(t, 2) * cx2 + Math.pow(t, 3) * p.endX;
+          const curY = Math.pow(1 - t, 3) * p.startY + 3 * Math.pow(1 - t, 2) * t * cy1 + 3 * (1 - t) * Math.pow(t, 2) * cx2 + Math.pow(t, 3) * p.endY;
+
+          pCtx.beginPath();
+          pCtx.arc(curX, curY, 4.5, 0, Math.PI * 2);
+          pCtx.fillStyle = '#c084fc';
+          pCtx.shadowColor = '#c084fc';
+          pCtx.shadowBlur = 8;
+          pCtx.fill();
+          pCtx.shadowBlur = 0;
+
+          if (p.progress >= 1.0) {
+            const sibling = pods[p.siblingIndex];
+            if (sibling.overload) {
+              if (sibling.protectionEnabled) {
+                sibling.shed++;
+                totalShed++;
+                totalDropped503++;
+                spawnFeedbackBadge(sibling.id, '🛡️ 503 Retry Shed', '#ef4444');
+              } else {
+                sibling.served++;
+                totalServed++;
+                sibling.rssMB += 7;
+                spawnFeedbackBadge(sibling.id, '⚠️ Retry Queued', '#f97316');
+              }
+            } else {
+              sibling.served++;
+              totalServed++;
+              totalClientRetriesHandled++;
+              spawnFeedbackBadge(sibling.id, '🔄 200 (Retry OK)', '#a855f7');
+              recordLatency(sibling.delay + 2.0);
+            }
+            activePackets.splice(i, 1);
+          }
+        }
       }
-      
-      updateMetrics();
     }
 
-    // Sample event loop
-    function sampleEventLoop() {
-      if (!state.running) return;
-      
-      const now = Date.now();
-      const actualDelay = now - state.lastSampleTime;
-      state.lastSampleTime = now;
-      
-      // Natural decay
-      state.eventLoopDelay *= 0.95;
-      
-      // Add variance based on processing
-      if (state.heavyLoad) {
-        // Fluctuating load - sine wave pattern that goes above and below threshold
-        const time = Date.now() / 1000; // Convert to seconds
-        const sineWave = Math.sin(time * 0.5) * 30; // Oscillates between -30 and +30
-        const baseLoad = 35; // Base value around the threshold
-        const targetDelay = baseLoad + sineWave; // Fluctuates between ~5ms and ~65ms
-        
-        // Smoothly transition to target delay
-        const diff = targetDelay - state.eventLoopDelay;
-        state.eventLoopDelay += diff * 0.3; // Smooth transition
-        
-        // Add some random noise
-        state.eventLoopDelay += (Math.random() - 0.5) * 5;
+    function recordLatency(ms) {
+      recentLatencies.push(ms);
+      if (recentLatencies.length > MAX_LATENCY_SAMPLES) {
+        recentLatencies.shift();
       }
-      
-      // Check threshold
-      const wasOverload = state.overload;
-      state.overload = state.eventLoopDelay > config.maxEventLoopDelay;
-      
-      // Update phase on state change
-      if (!wasOverload && state.overload) {
-        updatePhase(`🚨 OVERLOAD DETECTED! Event loop delay (${state.eventLoopDelay.toFixed(1)}ms) exceeded threshold (42ms) - starting to reject requests`);
-      } else if (wasOverload && !state.overload) {
-        updatePhase(`✓ Recovered! Event loop delay (${state.eventLoopDelay.toFixed(1)}ms) back below threshold - accepting requests again`);
-      }
-      
-      // Visual sample indicator
-      const sample = svg.append('circle')
-        .attr('cx', sections.monitoring.x + 150)
-        .attr('cy', sections.monitoring.y + 150)
-        .attr('r', 5)
-        .attr('fill', '#7ee787')
-        .attr('opacity', 1);
-      
-      sample.transition()
-        .duration(1000)
-        .attr('r', 20)
-        .attr('opacity', 0)
-        .remove();
-      
-      updateMetrics();
     }
 
-    // Update metrics display
-    function updateMetrics() {
-      monitoringGroup.select('.metric-delay')
-        .text(state.eventLoopDelay.toFixed(1) + 'ms')
-        .attr('fill', state.overload ? '#f85149' : '#7ee787');
-      
-      monitoringGroup.select('.metric-overload')
-        .text(state.overload ? 'YES' : 'no')
-        .attr('fill', state.overload ? '#f85149' : '#7ee787');
-      
-      monitoringGroup.select('.metric-accepted')
-        .text(state.acceptedCount);
-      
-      monitoringGroup.select('.metric-rejected')
-        .text(state.rejectedCount);
+    function spawnFeedbackBadge(podId, text, color) {
+      const card = document.getElementById(`podCard-${podId}`);
+      if (!card) return;
+      const badge = document.createElement('div');
+      badge.className = 'float-feedback';
+      badge.textContent = text;
+      badge.style.color = color;
+      badge.style.background = 'rgba(15, 23, 42, 0.95)';
+      badge.style.border = `1px solid ${color}`;
+      card.appendChild(badge);
+      setTimeout(() => badge.remove(), 750);
     }
 
-    // Controls
-    document.getElementById('startBtn').addEventListener('click', () => {
-      if (state.running) return;
-      
-      state.running = true;
-      state.heavyLoad = false;
-      state.lastSampleTime = Date.now();
-      
-      updatePhase('🟢 Normal load started - sending requests every 500ms');
-      
-      timers.request = setInterval(generateRequest, config.normalRequestInterval);
-      timers.sample = setInterval(sampleEventLoop, config.sampleInterval);
-      
-      animate();
-      
-      document.getElementById('startBtn').disabled = true;
-      document.getElementById('heavyBtn').disabled = false;
-      document.getElementById('stopBtn').disabled = false;
+    // Telemetry Rolling Multi-line Graph
+    const telemetryCanvas = document.getElementById('telemetryCanvas');
+    const tCtx = telemetryCanvas.getContext('2d');
+
+    function drawTelemetryGraph() {
+      const w = telemetryCanvas.width;
+      const h = telemetryCanvas.height;
+      tCtx.clearRect(0, 0, w, h);
+
+      // Grid lines
+      tCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      tCtx.lineWidth = 1;
+      for (let y = 0; y < h; y += 30) {
+        tCtx.beginPath();
+        tCtx.moveTo(0, y);
+        tCtx.lineTo(w, y);
+        tCtx.stroke();
+      }
+
+      // Max Delay Threshold Dashed Line (e.g. 42ms)
+      const maxGraphMs = 150;
+      const threshY = h - (maxDelayThreshold / maxGraphMs) * h;
+      tCtx.beginPath();
+      tCtx.setLineDash([5, 4]);
+      tCtx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+      tCtx.lineWidth = 1.5;
+      tCtx.moveTo(0, threshY);
+      tCtx.lineTo(w, threshY);
+      tCtx.stroke();
+      tCtx.setLineDash([]);
+
+      // Draw latency trail for each pod
+      pods.forEach(pod => {
+        tCtx.beginPath();
+        tCtx.strokeStyle = pod.color;
+        tCtx.lineWidth = pod.overload ? 2.5 : 1.5;
+        const pts = pod.history;
+        const step = w / (pts.length - 1);
+
+        for (let i = 0; i < pts.length; i++) {
+          const val = pts[i];
+          const y = h - Math.min(1, val / maxGraphMs) * h;
+          const x = i * step;
+          if (i === 0) tCtx.moveTo(x, y);
+          else tCtx.lineTo(x, y);
+        }
+        tCtx.stroke();
+      });
+    }
+
+    // Ingress Dispatcher
+    let dispatchIndex = 0;
+
+    function dispatchIncomingRequest() {
+      if (!simulationRunning) return;
+
+      const targetIndex = dispatchIndex;
+      dispatchIndex = (dispatchIndex + 1) % NUM_PODS;
+
+      const targetPod = pods[targetIndex];
+      // Determine if this request is a cryptographic session creation or fast I/O
+      const isCrypto = Math.random() * 100 < cryptoRatioPercent;
+
+      document.getElementById('ingressDispatchText').textContent = 
+        `Routing ${isCrypto ? `🔑 Task (${cryptoTaskImpactMs}ms)` : '● Fast Tx'} -> ${targetPod.name}`;
+
+      if (activePackets.length < 120) {
+        activePackets.push({
+          phase: 'travel',
+          targetIndex: targetIndex,
+          isCrypto: isCrypto,
+          progress: 0,
+          speed: 0.025 + Math.random() * 0.01
+        });
+      }
+    }
+
+    // Update the 4 Golden Signals Dashboard
+    function updateGoldenSignals() {
+      // 1. Latency (p95 and p99)
+      if (recentLatencies.length > 5) {
+        const sorted = [...recentLatencies].sort((a, b) => a - b);
+        const idx95 = Math.floor(sorted.length * 0.95);
+        const idx99 = Math.floor(sorted.length * 0.99);
+        const p95 = sorted[idx95] || 2.4;
+        const p99 = sorted[idx99] || 5.8;
+
+        document.getElementById('signalP95').textContent = `${p95.toFixed(1)} ms`;
+        document.getElementById('signalP99').textContent = `${p99.toFixed(1)} ms`;
+
+        const pillLat = document.getElementById('pillLatency');
+        if (p95 > maxDelayThreshold) {
+          pillLat.className = 'signal-status-pill pill-danger';
+          pillLat.textContent = 'High Tail Lag';
+        } else if (p95 > 20) {
+          pillLat.className = 'signal-status-pill pill-warn';
+          pillLat.textContent = 'Elevated';
+        } else {
+          pillLat.className = 'signal-status-pill pill-healthy';
+          pillLat.textContent = 'Healthy';
+        }
+      }
+
+      // 2. Traffic (Throughput)
+      const rps = Math.round(requestsPerMinute / 60);
+      const rpsPerPod = Math.round(rps / NUM_PODS);
+      document.getElementById('signalTrafficRate').textContent = requestsPerMinute.toLocaleString();
+      document.getElementById('signalTrafficRPS').textContent = `~${rps.toLocaleString()} req/sec fleet-wide (${rpsPerPod.toLocaleString()} req/s / pod)`;
+
+      // 3. Errors (Error Rate %)
+      const totalReqs = totalServed + totalDropped503;
+      const errorPct = totalReqs > 0 ? ((totalShed / (totalReqs + totalShed)) * 100) : 0;
+      document.getElementById('signalErrorRate').textContent = `${errorPct.toFixed(1)}%`;
+      document.getElementById('signalErrorCount').textContent = 
+        `${totalShed.toLocaleString()} shed (503) · ${totalClientRetriesHandled.toLocaleString()} client retries handled`;
+
+      const pillErr = document.getElementById('pillErrors');
+      const errVal = document.getElementById('signalErrorRate');
+      if (errorPct > 3.0) {
+        pillErr.className = 'signal-status-pill pill-danger';
+        pillErr.textContent = '503 Shedding';
+        errVal.style.color = '#ef4444';
+      } else if (errorPct > 0.0) {
+        pillErr.className = 'signal-status-pill pill-warn';
+        pillErr.textContent = 'Sporadic 503';
+        errVal.style.color = '#f59e0b';
+      } else {
+        pillErr.className = 'signal-status-pill pill-healthy';
+        pillErr.textContent = '0.0% Shed';
+        errVal.style.color = '#10b981';
+      }
+
+      // 4. Saturation (% Capacity)
+      const avgLag = pods.reduce((acc, p) => acc + p.delay, 0) / NUM_PODS;
+      const avgMemory = pods.reduce((acc, p) => acc + p.rssMB, 0) / NUM_PODS;
+      const lagSaturation = (avgLag / maxDelayThreshold) * 60;
+      const memSaturation = (avgMemory / 250) * 40;
+      let fleetSat = Math.min(100, Math.round(lagSaturation + memSaturation));
+      if (fleetSat < 18) fleetSat = 18;
+
+      document.getElementById('signalSaturationVal').textContent = `${fleetSat}%`;
+      const satBar = document.getElementById('satBarFill');
+      satBar.style.width = `${fleetSat}%`;
+
+      const pillSat = document.getElementById('pillSaturation');
+      const satVal = document.getElementById('signalSaturationVal');
+      if (fleetSat >= 85) {
+        pillSat.className = 'signal-status-pill pill-danger';
+        pillSat.textContent = 'Near Capacity';
+        satBar.style.backgroundColor = '#ef4444';
+        satVal.style.color = '#ef4444';
+      } else if (fleetSat >= 60) {
+        pillSat.className = 'signal-status-pill pill-warn';
+        pillSat.textContent = 'Elevated Load';
+        satBar.style.backgroundColor = '#f59e0b';
+        satVal.style.color = '#f59e0b';
+      } else {
+        pillSat.className = 'signal-status-pill pill-healthy';
+        pillSat.textContent = 'Normal';
+        satBar.style.backgroundColor = '#10b981';
+        satVal.style.color = '#10b981';
+      }
+
+      // 5. Little's Law Live Capacity Calculation
+      // 1 User Journey = 1 Heavy Crypto Task (cryptoTaskImpactMs) + 8 Lite Requests (0.5ms each)
+      const liteCount = 8;
+      const liteCpuMs = 0.5;
+      const journeyCpuMs = cryptoTaskImpactMs + (liteCount * liteCpuMs);
+      const reqsPerJourney = 1 + liteCount; // 9 requests total
+
+      // Derived user journeys from current incoming traffic
+      const userJourneysPerMin = Math.round(requestsPerMinute / reqsPerJourney);
+      const userJourneysPerSec = (userJourneysPerMin / 60).toFixed(1);
+
+      // Single-container safe capacity (target rho <= 0.70 to guarantee event loop delay < 42ms)
+      const safeJourneysPerSec = 700 / journeyCpuMs; // 0.70 / (journeyCpuMs / 1000)
+      const safeJourneysPerMin = Math.round(safeJourneysPerSec * 60);
+      const safeReqsPerPodRps = Math.round(safeJourneysPerSec * reqsPerJourney);
+
+      // Dimensioned containers needed by Little's Law: N = ceil(Journeys / SafeCapacity)
+      const requiredPods = Math.max(1, Math.ceil(userJourneysPerMin / safeJourneysPerMin));
+
+      // Update HUD elements
+      const elServiceTime = document.getElementById('llServiceTime');
+      if (elServiceTime) elServiceTime.textContent = `${journeyCpuMs.toFixed(1)} ms/journey`;
+
+      const elUserJourneys = document.getElementById('llUserJourneys');
+      if (elUserJourneys) elUserJourneys.textContent = `${userJourneysPerMin.toLocaleString()} /min`;
+
+      const elUserRps = document.getElementById('llUserRps');
+      if (elUserRps) elUserRps.textContent = `~${userJourneysPerSec} new users/sec`;
+
+      const elPodCap = document.getElementById('llPodCapacity');
+      if (elPodCap) elPodCap.textContent = `${safeJourneysPerMin.toLocaleString()} /min`;
+
+      const elPodCapRps = document.getElementById('llPodCapacityRps');
+      if (elPodCapRps) elPodCapRps.textContent = `${safeJourneysPerSec.toFixed(1)} users/sec (${safeReqsPerPodRps} req/s)`;
+
+      const elReqPods = document.getElementById('llRequiredPods');
+      const elRatio = document.getElementById('llFleetRatio');
+      if (elReqPods && elRatio) {
+        elReqPods.textContent = `${requiredPods} ${requiredPods === 1 ? 'Container' : 'Containers'}`;
+        if (requiredPods <= NUM_PODS) {
+          const headroom = NUM_PODS - requiredPods;
+          elReqPods.style.color = '#10b981';
+          elRatio.textContent = `Fleet has ${NUM_PODS} pods (${headroom} pod headroom)`;
+        } else {
+          const deficit = requiredPods - NUM_PODS;
+          elReqPods.style.color = '#ef4444';
+          elRatio.textContent = `Fleet deficit: short by ${deficit} pods!`;
+        }
+      }
+
+      const elStatus = document.getElementById('llAutoscalerStatus');
+      const elSub = document.getElementById('llAutoscalerSub');
+      if (elStatus && elSub) {
+        if (requiredPods <= NUM_PODS) {
+          elStatus.textContent = 'Healthy Headroom';
+          elStatus.style.color = '#10b981';
+          elSub.textContent = 'Zero shedding needed · Event loop < 3ms';
+        } else {
+          elStatus.textContent = 'Autoscaler Lag!';
+          elStatus.style.color = '#ef4444';
+          elSub.textContent = 'Overload Protection shedding excess with 503';
+        }
+      }
+    }
+
+    // Physics Engine & Natural Recovery Loop
+    function tickSimulation() {
+      if (simulationRunning) {
+        pods.forEach(pod => {
+          // If pod has cryptographic backlog, drain it smoothly
+          if (pod.cryptoBacklog > 0) {
+            // Drain ~1.2ms of backlog per frame (~72ms/sec)
+            pod.cryptoBacklog = Math.max(0, pod.cryptoBacklog - 1.2);
+          }
+
+          // Base delay: 2.2ms baseline + traffic pressure above 25k req/min
+          const trafficLag = requestsPerMinute > 25000 ? ((requestsPerMinute - 25000) / 3500) : 0;
+          pod.targetDelay = 2.2 + trafficLag + pod.cryptoBacklog;
+
+          // If unprotected and queuing, delay stays high until backlog drains
+          if (!pod.protectionEnabled && pod.unprotectedQueued > 0) {
+            if (pod.cryptoBacklog === 0) {
+              pod.unprotectedQueued = Math.max(0, pod.unprotectedQueued - 1);
+            }
+          }
+
+          // Memory recovery: when protected, memory slowly GCs back down to 50MB
+          if (pod.protectionEnabled && pod.rssMB > 55) {
+            pod.rssMB = Math.max(50, pod.rssMB - 1);
+          }
+
+          // Delay smoothly tracks targetDelay with small natural noise
+          const diff = pod.targetDelay - pod.delay;
+          pod.delay += diff * 0.18;
+          pod.delay += (Math.random() - 0.5) * 0.4;
+          if (pod.delay < 1.0) pod.delay = 1.0;
+
+          // History buffer
+          pod.history.shift();
+          pod.history.push(pod.delay);
+
+          // Overload check
+          pod.overload = pod.delay > maxDelayThreshold;
+
+          // Wheel rotation speed: physically tied to event loop delay and state!
+          // Normal baseline (~2.2ms delay) -> 5.2 deg/frame (fast, smooth rotation matching Healthy summary)
+          // Heavy crypto task (~16-20ms delay) -> 2.8 deg/frame (visibly slower, busy executing sync work)
+          // Overload limit (~42ms delay) -> 1.8 deg/frame (strained)
+          // Queue collapse (>100ms delay) -> 0.9-1.2 deg/frame (churning callbacks, but NEVER stops!)
+          const spinSpeed = Math.max(0.9, Math.min(5.5, 7.5 / Math.pow(pod.delay / 2.2, 0.45)));
+          pod.wheelAngle = (pod.wheelAngle + spinSpeed) % 360;
+
+          // Task indicator text
+          if (pod.overload) {
+            if (pod.protectionEnabled) {
+              pod.currentTask = `🚨 Compounded Tasks (${Math.round(pod.cryptoBacklog)}ms &gt; limit) · Shedding 503 (&lt;0.05ms)`;
+            } else {
+              const estDelayMs = pod.delay + (pod.unprotectedQueued * 1200);
+              if (estDelayMs >= 30000) {
+                pod.currentTask = `🧟 ALB 503 Timed Out (&gt;30s) · Node still executing task to completion!`;
+              } else {
+                pod.currentTask = `⏱️ Delayed (${(estDelayMs / 1000).toFixed(1)}s &lt; 30s) · Loop actively working`;
+              }
+            }
+          } else if (pod.cryptoBacklog >= cryptoTaskImpactMs * 1.5) {
+            pod.currentTask = `⚠️ Stacking Work (${Math.round(pod.cryptoBacklog)}ms)`;
+          } else if (pod.cryptoBacklog > 0) {
+            pod.currentTask = `🔐 Auth Session (${cryptoTaskImpactMs}ms - within limit)`;
+          } else {
+            pod.currentTask = '✓ Serving fast transactions';
+          }
+
+          // Update Pod DOM
+          const card = document.getElementById(`podCard-${pod.id}`);
+          const badge = document.getElementById(`badge-${pod.id}`);
+          const delayEl = document.getElementById(`delayVal-${pod.id}`);
+          const rssEl = document.getElementById(`rssVal-${pod.id}`);
+          const servedEl = document.getElementById(`served-${pod.id}`);
+          const shedEl = document.getElementById(`shed-${pod.id}`);
+          const taskEl = document.getElementById(`taskIndicator-${pod.id}`);
+
+          servedEl.textContent = pod.served;
+          shedEl.textContent = pod.shed;
+          delayEl.textContent = `${pod.delay.toFixed(1)} ms`;
+          rssEl.textContent = `${pod.rssMB} MB`;
+          taskEl.innerHTML = `<span>${pod.currentTask}</span>`;
+
+          // Container Golden Signals
+          const sigLat = document.getElementById(`sigLat-${pod.id}`);
+          const sigTraf = document.getElementById(`sigTraf-${pod.id}`);
+          const sigErr = document.getElementById(`sigErr-${pod.id}`);
+          const sigSat = document.getElementById(`sigSat-${pod.id}`);
+
+          if (sigLat) {
+            sigLat.textContent = `${pod.delay.toFixed(1)}ms`;
+            sigLat.style.color = pod.delay > maxDelayThreshold ? '#ef4444' : (pod.delay > 20 ? '#fbbf24' : '#38bdf8');
+          }
+          if (sigTraf) {
+            sigTraf.textContent = `${pod.served}`;
+          }
+          if (sigErr) {
+            sigErr.textContent = `${pod.shed} shed`;
+            sigErr.style.color = pod.shed > 0 ? '#ef4444' : '#10b981';
+          }
+          if (sigSat) {
+            const podSat = Math.min(100, Math.round((pod.delay / maxDelayThreshold) * 60 + (pod.rssMB / 350) * 40));
+            sigSat.textContent = `${podSat}%`;
+            sigSat.style.color = podSat > 80 ? '#ef4444' : (podSat > 50 ? '#fbbf24' : '#10b981');
+          }
+
+          if (pod.overload) {
+            if (pod.protectionEnabled) {
+              card.className = 'pod-card overloaded';
+              badge.className = 'pod-status-badge status-overloaded';
+              badge.textContent = 'SHEDDING (503)';
+              delayEl.className = 'metric-value lag-crit';
+              rssEl.style.color = '#94a3b8';
+            } else {
+              card.className = 'pod-card unprotected-choking';
+              badge.className = 'pod-status-badge status-overloaded';
+              badge.textContent = 'QUEUE COLLAPSE';
+              delayEl.className = 'metric-value lag-crit';
+              rssEl.style.color = '#ef4444';
+              rssEl.style.fontWeight = '800';
+            }
+          } else if (pod.cryptoBacklog >= cryptoTaskImpactMs * 1.5 || pod.delay > maxDelayThreshold * 0.7) {
+            card.className = 'pod-card computing-crypto';
+            badge.className = 'pod-status-badge status-computing';
+            badge.textContent = 'Stacking Work';
+            delayEl.className = 'metric-value lag-warn';
+            rssEl.style.color = '#94a3b8';
+          } else if (pod.cryptoBacklog > 0) {
+            card.className = 'pod-card computing-crypto';
+            badge.className = 'pod-status-badge status-computing';
+            badge.textContent = `Task (${cryptoTaskImpactMs}ms)`;
+            delayEl.className = 'metric-value lag-warn';
+            rssEl.style.color = '#94a3b8';
+          } else {
+            card.className = 'pod-card healthy';
+            badge.className = 'pod-status-badge status-healthy';
+            badge.textContent = 'Healthy';
+            delayEl.className = 'metric-value lag-ok';
+            rssEl.style.color = '#94a3b8';
+          }
+
+          drawWheel(pod);
+        });
+
+        updateAndDrawTrafficCanvas();
+        drawTelemetryGraph();
+        updateGoldenSignals();
+      }
+
+      requestAnimationFrame(tickSimulation);
+    }
+
+    // Trigger an individual pod with an incoming cryptographic task event
+    window.triggerPodCrypto = function(id) {
+      const pod = pods.find(p => p.id === id);
+      if (!pod) return;
+      pod.cryptoBacklog += cryptoTaskImpactMs;
+      if (pod.cryptoBacklog >= maxDelayThreshold) {
+        if (pod.protectionEnabled) {
+          updateTicker(`🚨 Compounded tasks on <strong>${pod.name}</strong> (${Math.round(pod.cryptoBacklog)}ms &gt; ${maxDelayThreshold}ms)! <strong>Protection ON</strong>: shedding 503s straight to client.`);
+        } else {
+          updateTicker(`🔥 Compounded tasks on <strong>${pod.name}</strong> (${Math.round(pod.cryptoBacklog)}ms &gt; ${maxDelayThreshold}ms)! <strong>Protection OFF</strong>: queue collapsing, RSS memory exploding!`);
+        }
+      } else {
+        updateTicker(`🔑 Inbound task (+${cryptoTaskImpactMs}ms) to <strong>${pod.name}</strong>. Total lag ~${Math.round(pod.delay + cryptoTaskImpactMs)}ms is within ${maxDelayThreshold}ms limit (minimal impact).`);
+      }
+    };
+
+    // Scenarios & Actions
+    window.runStoryStep = function(step) {
+      document.querySelectorAll('.story-step-btn').forEach((b, idx) => {
+        b.classList.toggle('active', idx + 1 === step);
+      });
+
+      const storyDesc = document.getElementById('storyDesc');
+      const rateSlider = document.getElementById('rateSlider');
+      const cryptoSlider = document.getElementById('cryptoSlider');
+      const impactSlider = document.getElementById('impactSlider');
+      const burstSlider = document.getElementById('burstSlider');
+
+      if (step === 1) {
+        // Baseline: 60 req/min, 2% crypto, 16ms tasks, protection ON on all pods
+        requestsPerMinute = 60;
+        cryptoRatioPercent = 2;
+        cryptoTaskImpactMs = 16;
+        burstTaskCount = 4;
+        rateSlider.value = 60;
+        cryptoSlider.value = 2;
+        impactSlider.value = 16;
+        burstSlider.value = 4;
+        pods.forEach(p => {
+          p.protectionEnabled = true;
+          const btn = document.getElementById(`protToggle-${p.id}`);
+          if (btn) {
+            btn.className = 'protection-toggle-btn prot-on';
+            btn.textContent = '🛡️ Protection: ON';
+          }
+        });
+        updateSliderLabels();
+        storyDesc.innerHTML = '<strong>Baseline (60 req/min, 2% Crypto):</strong> Fleet runs completely healthy at 1 req/sec (~1 request every 6s per pod). Single 16ms tasks have minimal impact (~18ms lag &lt; 42ms limit) and drain in ~200ms. 0% shed, 0% error rate.';
+        unspikeAllPods();
+        updateTicker('🟢 Normal 60 req/min baseline restored across all 6 container pods (~1 req/s fleet-wide). Zero compounding.');
+      } else if (step === 2) {
+        // Compounded Task Burst: 16,000 req/min, 10% crypto, all protected
+        requestsPerMinute = 16000;
+        cryptoRatioPercent = 10;
+        cryptoTaskImpactMs = 16;
+        burstTaskCount = 6;
+        rateSlider.value = 16000;
+        cryptoSlider.value = 10;
+        impactSlider.value = 16;
+        burstSlider.value = 6;
+        pods.forEach(p => {
+          p.protectionEnabled = true;
+          const btn = document.getElementById(`protToggle-${p.id}`);
+          if (btn) {
+            btn.className = 'protection-toggle-btn prot-on';
+            btn.textContent = '🛡️ Protection: ON';
+          }
+        });
+        updateSliderLabels();
+        storyDesc.innerHTML = '<strong>Compounded Task Burst (Protection ON):</strong> When 3+ tasks land on a container (3 &times; 16ms = 48ms &gt; 42ms limit), <code>overload-protection</code> immediately sheds 503s straight to the client. RSS memory stays flat at ~52MB, protecting process survival.';
+        injectCryptoBurst(6);
+        updateTicker('🔑 <strong>Compounded Task Burst!</strong> Protected pods shed 503s straight to client while RSS memory stays bounded.');
+      } else if (step === 3) {
+        // Unprotected Failure Demo: Turn protection OFF on Pod 4, hit it with tasks
+        pods.forEach((p, idx) => {
+          p.protectionEnabled = (idx !== 3); // Pod 4 is index 3
+          const btn = document.getElementById(`protToggle-${p.id}`);
+          if (btn) {
+            btn.className = `protection-toggle-btn ${p.protectionEnabled ? 'prot-on' : 'prot-off'}`;
+            btn.textContent = p.protectionEnabled ? '🛡️ Protection: ON' : '⚠️ Protection: OFF';
+          }
+        });
+        triggerPodCrypto(4);
+        triggerPodCrypto(4);
+        storyDesc.innerHTML = '<strong>Unprotected Queue Collapse (Pod 4 Protection OFF):</strong> Notice Pod 4\'s event loop animation does NOT stop—it spins actively executing callbacks! If response latency is &lt;30s, it returns to ALB (delayed 200 OK). If latency reaches 30s, ALB returns a 503 error to the client, but the task in Node.js still carries on doing the work to completion!';
+        updateTicker('🔥 <strong>Pod 4 Unprotected Queue Collapse!</strong> Event loop wheel still spinning. Responses &lt;30s return delayed; responses &gt;30s trigger ALB 503 while Node still executes work to completion!');
+      } else if (step === 4) {
+        // +50% Surge (Autoscaler Lag)
+        pods.forEach(p => {
+          p.protectionEnabled = true;
+          const btn = document.getElementById(`protToggle-${p.id}`);
+          if (btn) {
+            btn.className = 'protection-toggle-btn prot-on';
+            btn.textContent = '🛡️ Protection: ON';
+          }
+        });
+        unspikeAllPods();
+        window.modifyTraffic(1.5);
+        storyDesc.innerHTML = '<strong>+50% Traffic Surge (Autoscaler Lag):</strong> User journeys surged by +50% in 1 minute! Single container utilization leaps past ρ = 1.05. Overload protection sheds the overflow with 503s straight to the client, preventing queue collapse until the autoscaler provisions new pods.';
+      }
+
+      restartDispatcher();
+    };
+
+    function injectCryptoBurst(count) {
+      const tasksToSpawn = count || burstTaskCount;
+      for (let i = 0; i < tasksToSpawn; i++) {
+        const targetIndex = Math.floor(Math.random() * NUM_PODS);
+        activePackets.push({
+          phase: 'travel',
+          targetIndex: targetIndex,
+          isCrypto: true,
+          progress: Math.random() * 0.2,
+          speed: 0.04 + Math.random() * 0.02
+        });
+      }
+    }
+
+    function unspikeAllPods() {
+      pods.forEach(p => {
+        p.cryptoBacklog = 0;
+        p.unprotectedQueued = 0;
+        p.rssMB = 50 + Math.floor(Math.random() * 6);
+        p.targetDelay = 2.2 + Math.random() * 0.6;
+        p.delay = 2.5;
+        p.currentTask = '✓ Serving fast transactions';
+      });
+      updateTicker('🔄 Fleet unspiked and cleared! All containers normalized below 3ms.');
+    }
+
+    function updateSliderLabels() {
+      const userJourneys = Math.round(requestsPerMinute / 9);
+      document.getElementById('rateLabel').textContent = `${requestsPerMinute.toLocaleString()} req/min`;
+      const jLbl = document.getElementById('journeyLabel');
+      if (jLbl) jLbl.textContent = `${userJourneys.toLocaleString()} /min`;
+      const jSlider = document.getElementById('journeySlider');
+      if (jSlider && parseInt(jSlider.value) !== userJourneys) {
+        if (userJourneys > parseInt(jSlider.max)) jSlider.max = userJourneys;
+        jSlider.value = userJourneys;
+      }
+      document.getElementById('cryptoRatioLabel').textContent = `${cryptoRatioPercent}%`;
+      document.getElementById('impactLabel').textContent = `${cryptoTaskImpactMs}ms`;
+      document.getElementById('burstCountLabel').textContent = `${burstTaskCount} Tasks`;
+      document.getElementById('btnInjectCrypto').textContent = `🔑 Inject Tasks (${burstTaskCount} × ${cryptoTaskImpactMs}ms)`;
+      document.querySelectorAll('[id^="btnPodAdd-"]').forEach(btn => {
+        btn.textContent = `🔑 +1 Task (${cryptoTaskImpactMs}ms)`;
+      });
+    }
+
+    // Modify Traffic & User Journeys by Factor (e.g. 1.5 for +50%, 0.5 for -50%)
+    window.modifyTraffic = function(factor) {
+      const oldRate = requestsPerMinute;
+      let newRate = Math.round(requestsPerMinute * factor);
+      newRate = Math.max(10, Math.min(500000, newRate));
+      requestsPerMinute = newRate;
+
+      const rateSlider = document.getElementById('rateSlider');
+      if (rateSlider) {
+        if (newRate > parseInt(rateSlider.max)) rateSlider.max = newRate;
+        rateSlider.value = newRate;
+      }
+
+      updateSliderLabels();
+      restartDispatcher();
+      updateGoldenSignals();
+
+      const changePercent = Math.round(((newRate - oldRate) / oldRate) * 100);
+      const sign = changePercent >= 0 ? '+' : '';
+      const userJourneys = Math.round(newRate / 9);
+      if (changePercent > 0) {
+        updateTicker(`📈 <strong>Traffic Surged by ${sign}${changePercent}%!</strong> Rate: ${newRate.toLocaleString()} req/min (~${userJourneys.toLocaleString()} user journeys/min). Notice single containers absorbing or shedding depending on Little's Law capacity.`);
+      } else {
+        updateTicker(`📉 <strong>Traffic Dropped by ${changePercent}%!</strong> Rate: ${newRate.toLocaleString()} req/min (~${userJourneys.toLocaleString()} user journeys/min). Loop delays drop back below 3ms.`);
+      }
+    };
+
+    // Automated ±50% Per-Minute Cycle
+    let autoStepTimer = null;
+    let autoStepCountdownVal = 60;
+    let autoStepCountdownInterval = null;
+    let autoStepDirection = 1; // 1 for +50%, -1 for -50%
+
+    window.toggleAutoStep = function() {
+      const btn = document.getElementById('btnAutoStep');
+      const badge = document.getElementById('autoTimerBadge');
+      const statusText = document.getElementById('autoStepStatus');
+
+      if (autoStepTimer) {
+        clearInterval(autoStepTimer);
+        clearInterval(autoStepCountdownInterval);
+        autoStepTimer = null;
+        autoStepCountdownInterval = null;
+        if (btn) btn.classList.remove('active');
+        if (statusText) statusText.textContent = 'OFF';
+        if (badge) badge.style.display = 'none';
+        updateTicker('⏱️ Automated ±50%/minute cycle stopped.');
+      } else {
+        if (btn) btn.classList.add('active');
+        if (statusText) statusText.textContent = 'ON';
+        if (badge) badge.style.display = 'inline-flex';
+        autoStepCountdownVal = 60;
+        const cd = document.getElementById('autoStepCountdown');
+        if (cd) cd.textContent = `${autoStepCountdownVal}s`;
+
+        updateTicker('⏱️ Automated ±50%/minute cycle <strong>STARTED</strong>! Traffic will surge +50% or drop -50% every 60 seconds to simulate autoscaler lag.');
+
+        autoStepCountdownInterval = setInterval(() => {
+          autoStepCountdownVal--;
+          if (autoStepCountdownVal < 0) autoStepCountdownVal = 60;
+          const countEl = document.getElementById('autoStepCountdown');
+          if (countEl) countEl.textContent = `${autoStepCountdownVal}s`;
+        }, 1000);
+
+        autoStepTimer = setInterval(() => {
+          autoStepCountdownVal = 60;
+          if (autoStepDirection === 1) {
+            if (requestsPerMinute >= 300000) {
+              window.modifyTraffic(0.5);
+              autoStepDirection = 1;
+            } else {
+              window.modifyTraffic(1.5);
+              autoStepDirection = -1;
+            }
+          } else {
+            if (requestsPerMinute <= 30) {
+              window.modifyTraffic(1.5);
+              autoStepDirection = -1;
+            } else {
+              window.modifyTraffic(0.5);
+              autoStepDirection = 1;
+            }
+          }
+        }, 60000);
+      }
+    };
+
+    // Button Event Listeners
+    document.getElementById('btnInjectCrypto').addEventListener('click', () => {
+      injectCryptoBurst(burstTaskCount);
+      updateTicker(`⚡ <strong>Injected ${burstTaskCount} Tasks (+${cryptoTaskImpactMs}ms each)!</strong> Watch individual nodes absorb 1–2 tasks safely, while nodes with compounded tasks shed 503s straight to client.`);
     });
 
-    document.getElementById('heavyBtn').addEventListener('click', () => {
-      if (!state.running) return;
-      
-      state.heavyLoad = true;
-      clearInterval(timers.request);
-      timers.request = setInterval(generateRequest, config.heavyRequestInterval);
-      
-      updatePhase('🔴 FLUCTUATING LOAD activated - traffic oscillating above and below threshold (watch for recovery cycles)');
-      
-      document.getElementById('heavyBtn').disabled = true;
+    document.getElementById('btnUnspikeAll').addEventListener('click', unspikeAllPods);
+
+    document.getElementById('btnPause').addEventListener('click', (e) => {
+      simulationRunning = !simulationRunning;
+      e.target.textContent = simulationRunning ? '⏸ Pause' : '▶ Resume';
     });
 
-    document.getElementById('stopBtn').addEventListener('click', () => {
-      state.running = false;
-      state.heavyLoad = false;
-      
-      clearInterval(timers.request);
-      clearInterval(timers.sample);
-      cancelAnimationFrame(animationFrame);
-      
-      updatePhase(`⏸️ Stopped - Accepted: ${state.acceptedCount}, Rejected: ${state.rejectedCount}`);
-      
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('heavyBtn').disabled = true;
-      document.getElementById('stopBtn').disabled = true;
+    document.getElementById('btnReset').addEventListener('click', () => {
+      totalServed = 0;
+      totalShed = 0;
+      totalClientRetriesHandled = 0;
+      totalDropped503 = 0;
+      recentLatencies.length = 0;
+      pods.forEach(p => {
+        p.served = 0;
+        p.shed = 0;
+        p.unprotectedQueued = 0;
+        p.cryptoBacklog = 0;
+        p.rssMB = 50 + Math.floor(Math.random() * 6);
+        p.delay = 2.2;
+        p.targetDelay = 2.2;
+        p.history = new Array(60).fill(2.2);
+      });
+      activePackets.length = 0;
+      updateGoldenSignals();
+      updateTicker('↺ Telemetry counters reset.');
     });
 
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      // Stop if running
-      state.running = false;
-      state.heavyLoad = false;
-      clearInterval(timers.request);
-      clearInterval(timers.sample);
-      cancelAnimationFrame(animationFrame);
-      
-      // Reset state
-      state = {
-        running: false,
-        heavyLoad: false,
-        requestCount: 0,
-        rejectedCount: 0,
-        acceptedCount: 0,
-        eventLoopDelay: 0,
-        overload: false,
-        tasks: [],
-        requests: [],
-        samples: [],
-        lastSampleTime: Date.now()
-      };
-      
-      // Clear all request visuals
-      svg.selectAll('[class^="request-"]').remove();
-      
-      // Reset loop indicator
-      loopAngle = 0;
-      loopIndicator
-        .attr('x2', loopCenter.x)
-        .attr('y2', loopCenter.y - loopRadius);
-      
-      svg.select('.event-loop-circle')
-        .attr('stroke', '#30363d');
-      
-      svg.select('.loop-speed-text')
-        .text('Normal Speed')
-        .attr('fill', '#8b949e');
-      
-      updateMetrics();
-      updatePhase('Click "Start Normal Load" to begin visualization');
-      
-      // Reset buttons
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('heavyBtn').disabled = true;
-      document.getElementById('stopBtn').disabled = true;
+    // Sliders
+    const rateSlider = document.getElementById('rateSlider');
+    rateSlider.addEventListener('input', (e) => {
+      requestsPerMinute = parseInt(e.target.value);
+      updateSliderLabels();
+      restartDispatcher();
+      updateGoldenSignals();
     });
 
-    // Initial metrics display
-    updateMetrics();
+    const journeySlider = document.getElementById('journeySlider');
+    if (journeySlider) {
+      journeySlider.addEventListener('input', (e) => {
+        const journeys = parseInt(e.target.value);
+        requestsPerMinute = journeys * 9;
+        const rSlider = document.getElementById('rateSlider');
+        if (rSlider) {
+          if (requestsPerMinute > parseInt(rSlider.max)) rSlider.max = requestsPerMinute;
+          rSlider.value = requestsPerMinute;
+        }
+        updateSliderLabels();
+        restartDispatcher();
+        updateGoldenSignals();
+      });
+    }
+
+    const cryptoSlider = document.getElementById('cryptoSlider');
+    cryptoSlider.addEventListener('input', (e) => {
+      cryptoRatioPercent = parseInt(e.target.value);
+      updateSliderLabels();
+    });
+
+    const impactSlider = document.getElementById('impactSlider');
+    impactSlider.addEventListener('input', (e) => {
+      cryptoTaskImpactMs = parseInt(e.target.value);
+      updateSliderLabels();
+    });
+
+    const burstSlider = document.getElementById('burstSlider');
+    burstSlider.addEventListener('input', (e) => {
+      burstTaskCount = parseInt(e.target.value);
+      updateSliderLabels();
+    });
+
+    const threshSlider = document.getElementById('threshSlider');
+    const threshLabel = document.getElementById('threshLabel');
+    threshSlider.addEventListener('input', (e) => {
+      maxDelayThreshold = parseInt(e.target.value);
+      threshLabel.textContent = `${maxDelayThreshold}ms`;
+    });
+
+    function updateTicker(msg) {
+      document.getElementById('tickerMsg').innerHTML = msg;
+    }
+
+    // Dispatch Interval Calculation
+    let dispatchTimer = null;
+    function restartDispatcher() {
+      if (dispatchTimer) clearInterval(dispatchTimer);
+      // At 60 req/min, dispatch 1 packet every 1,000ms (1 request per second across the fleet).
+      // Scale smoothly with rate; clamp at 20ms (50 packets/sec) to keep canvas 60fps smooth under high load.
+      const msPerPacket = Math.max(20, Math.round(60000 / requestsPerMinute));
+      dispatchTimer = setInterval(dispatchIncomingRequest, msPerPacket);
+    }
+
+    // Initialize and run
+    restartDispatcher();
+    tickSimulation();
   </script>
 </body>
 </html>
