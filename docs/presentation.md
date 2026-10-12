@@ -70,7 +70,7 @@ When heavy synchronous tasks execute, latency doesn't degrade linearly—it expl
 - **Schema Validation**: Deep recursive Zod / TypeBox validation runs.
 - **Linux CFS Throttling**: Kernel pauses containers exceeding CPU quotas.
 
-### Little's Law ($L = \lambda W$) & The Non-Linear Queue Cliff:
+### Little's Law (L = λ · W) & The Non-Linear Queue Cliff:
 ```
 Latency ^
         |                                        / (Catastrophic Queue Collapse)

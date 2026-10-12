@@ -99,4 +99,4 @@ It profiles overhead across:
 2. Express core vs with `nativeOverloadProtection`
 3. Koa core vs with `overload-protection`
 
-The overhead of checking `eventLoopMonitor.percentile(99)` is sub-microsecond ($<0.001\text{ms}$), adding virtually zero latency to accepted requests.
+The overhead of checking `eventLoopMonitor.percentile(99)` is sub-microsecond (< 0.001 ms), adding virtually zero latency to accepted requests.

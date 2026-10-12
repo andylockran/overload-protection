@@ -56,11 +56,13 @@ Modern Node.js backends frequently act as gateways for LLM agents, vector databa
 A burst of compound cryptographic operations or schema validations blocks the thread for tens or hundreds of milliseconds. Shedding non-critical traffic during these bursts keeps the process healthy.
 
 ### 3. Little's Law & The Non-Linear Queue Cliff
-Queueing theory dictates that average queue depth is a function of arrival rate and service time ($L = \lambda W$):
+Queueing theory dictates that average concurrency/queue depth is a function of arrival rate and service time:
 
-$$\text{Capacity} = \frac{1}{\text{Average Processing Time per Request}}$$
+> **L = λ · W**
+>
+> **Capacity = 1 / (Average Processing Time per Request)**
 
-As server utilization ($\rho$) approaches 85–90%, queue depth and latency do not increase proportionally—**they explode exponentially**:
+As server utilization (**ρ**) approaches 85–90%, queue depth and latency do not increase proportionally—**they explode exponentially**:
 
 ```
 Latency ^
@@ -128,4 +130,4 @@ It simulates:
 - Real-time rotating event loop wheels synchronized to container loop lag.
 - The 4 Golden Signals (Traffic, Latency p95/p99, Error Rate, Saturation).
 - Little's Law live capacity planning (1 heavy crypto request + 8 lite transactions per user journey).
-- Automated $\pm 50\%$/min autoscaler lag scenarios.
+- Automated ±50%/min autoscaler lag scenarios.

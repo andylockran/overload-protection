@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@andylockran/overload-protection",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "main": "index.js",
   "exports": {
     ".": {
